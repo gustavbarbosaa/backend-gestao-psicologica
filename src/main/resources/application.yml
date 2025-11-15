@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+app:
+  secret: A89021BB51A9236074117917348644CD4C2CB17EE7FB1C51806B73F93A968849
+
 spring:
   application:
     name: "gestao_psicologica"
