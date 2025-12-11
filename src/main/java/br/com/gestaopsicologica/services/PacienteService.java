@@ -1,6 +1,7 @@
 package br.com.gestaopsicologica.services;
 
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
+import br.com.gestaopsicologica.DTO.responses.PacienteMaxResponse;
 import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
 import br.com.gestaopsicologica.domain.Paciente;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
@@ -25,10 +26,22 @@ public class PacienteService {
         return pacienteMapper.toMinResponseList(pacientes);
     }
 
+    public List<PacienteMaxResponse> buscarTodosPacientesDetalhes() {
+        List<Paciente> pacientes = pacienteRepository.findAll();
+
+        return pacienteMapper.toMaxResponseList(pacientes);
+    }
+
     public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
         Optional<Paciente> paciente = pacienteRepository.findById(id);
 
         return paciente.map(pacienteMapper::toMinResponse);
+    }
+
+    public Optional<PacienteMaxResponse> buscarPacientePorIdDetalhes(UUID id) {
+        Optional<Paciente> paciente = pacienteRepository.findById(id);
+
+        return paciente.map(pacienteMapper::toMaxResponse);
     }
 
     public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
@@ -51,23 +64,51 @@ public class PacienteService {
         Paciente pacienteExistente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
 
-        if (!pacienteExistente.getNome().equals(paciente.nome())) {
+        if (!pacienteExistente.getNome().equals(paciente.nome()) && paciente.nome() != null) {
             pacienteExistente.setNome(paciente.nome());
         }
 
-        if (!pacienteExistente.getEmail().equals(paciente.email())) {
+        if (!pacienteExistente.getEmail().equals(paciente.email()) && paciente.email() != null) {
             pacienteExistente.setEmail(paciente.email());
         }
 
-        if (!pacienteExistente.getTelefone().equals(paciente.telefone())) {
+        if (!pacienteExistente.getTelefone().equals(paciente.telefone()) && paciente.telefone() != null) {
             pacienteExistente.setTelefone(paciente.telefone());
         }
 
-        if (!pacienteExistente.getValorSessaoPadrao().equals(paciente.valorSessaoPadrao())) {
+        if (!pacienteExistente.getValorSessaoPadrao().equals(paciente.valorSessaoPadrao()) && paciente.valorSessaoPadrao() != null) {
             pacienteExistente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
         }
 
         Paciente pacienteAtualizado =  pacienteRepository.save(pacienteExistente);
         return pacienteMapper.toMinResponse(pacienteAtualizado);
+    }
+
+    public PacienteMaxResponse atualizarPacienteDetalhes(UUID id, PacienteRequest paciente) {
+        if (paciente == null || id == null) {
+            throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
+        }
+
+        Paciente pacienteExistente = pacienteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
+
+        if (!pacienteExistente.getNome().equals(paciente.nome()) && paciente.nome() != null) {
+            pacienteExistente.setNome(paciente.nome());
+        }
+
+        if (!pacienteExistente.getEmail().equals(paciente.email()) && paciente.email() != null) {
+            pacienteExistente.setEmail(paciente.email());
+        }
+
+        if (!pacienteExistente.getTelefone().equals(paciente.telefone()) && paciente.telefone() != null) {
+            pacienteExistente.setTelefone(paciente.telefone());
+        }
+
+        if (!pacienteExistente.getValorSessaoPadrao().equals(paciente.valorSessaoPadrao()) && paciente.valorSessaoPadrao() != null) {
+            pacienteExistente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
+        }
+
+        Paciente pacienteAtualizado =  pacienteRepository.save(pacienteExistente);
+        return pacienteMapper.toMaxResponse(pacienteAtualizado);
     }
 }
