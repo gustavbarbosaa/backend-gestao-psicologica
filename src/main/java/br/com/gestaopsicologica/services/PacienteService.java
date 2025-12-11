@@ -1,7 +1,7 @@
 package br.com.gestaopsicologica.services;
 
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
-import br.com.gestaopsicologica.DTO.responses.PacienteMinRespose;
+import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
 import br.com.gestaopsicologica.domain.Paciente;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
 import br.com.gestaopsicologica.repository.PacienteRepository;
@@ -19,31 +19,31 @@ public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final PacienteMapper pacienteMapper;
 
-    public List<PacienteMinRespose> buscarTodosPacientes() {
+    public List<PacienteMinResponse> buscarTodosPacientes() {
         List<Paciente> pacientes = pacienteRepository.findAll();
 
-        return pacienteMapper.toMinResposeList(pacientes);
+        return pacienteMapper.toMinResponseList(pacientes);
     }
 
-    public Optional<PacienteMinRespose> buscarPacientePorId(UUID id) {
+    public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
         Optional<Paciente> paciente = pacienteRepository.findById(id);
 
-        return paciente.map(pacienteMapper::toMinRespose);
+        return paciente.map(pacienteMapper::toMinResponse);
     }
 
-    public PacienteMinRespose criarPaciente (PacienteRequest paciente) {
+    public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
         Paciente pacienteConvertido = pacienteMapper.toPaciente(paciente);
 
         pacienteRepository.save(pacienteConvertido);
 
-        return pacienteMapper.toMinRespose(pacienteConvertido);
+        return pacienteMapper.toMinResponse(pacienteConvertido);
     }
 
     public void removerPaciente(UUID id) {
         pacienteRepository.deleteById(id);
     }
 
-    public PacienteMinRespose atualizarPaciente(UUID id, PacienteRequest paciente) {
+    public PacienteMinResponse atualizarPaciente(UUID id, PacienteRequest paciente) {
         if (paciente == null || id == null) {
             throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
         }
@@ -68,6 +68,6 @@ public class PacienteService {
         }
 
         Paciente pacienteAtualizado =  pacienteRepository.save(pacienteExistente);
-        return pacienteMapper.toMinRespose(pacienteAtualizado);
+        return pacienteMapper.toMinResponse(pacienteAtualizado);
     }
 }
