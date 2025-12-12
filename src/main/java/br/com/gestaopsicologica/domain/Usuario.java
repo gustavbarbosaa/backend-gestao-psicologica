@@ -4,13 +4,12 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Data
 @AllArgsConstructor
@@ -32,9 +31,27 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String nome;
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "papeis_usuario",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "papel_id")
+    )
+    private Set<Papel> papeis =  new HashSet<>();
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        Set<GrantedAuthority> authorities = new HashSet<>();
+
+        for (Papel papel : papeis) {
+            authorities.add(new SimpleGrantedAuthority("PAPEL_" + papel.getNome()));
+
+            for (Permissao permissao : papel.getPermissoes()) {
+                authorities.add(new SimpleGrantedAuthority(permissao.getCodigo()));
+            }
+        }
+
+        return authorities;
     }
 
     @Override

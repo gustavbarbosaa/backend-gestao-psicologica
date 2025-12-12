@@ -6,12 +6,12 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class TokenConfig {
@@ -21,9 +21,14 @@ public class TokenConfig {
     public String geraToken(Usuario usuario){
 
         Algorithm algorithm = Algorithm.HMAC256(secret);
+        List<String> authorities = usuario.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
 
         return JWT.create()
                 .withClaim("id", usuario.getId().toString())
+                .withClaim("authorities", authorities)
                 .withSubject(usuario.getEmail())
                 .withExpiresAt(Date.from(Instant.now().plusSeconds(86400)))
                 .withIssuedAt(Instant.now())
