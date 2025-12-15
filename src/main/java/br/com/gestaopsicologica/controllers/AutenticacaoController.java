@@ -4,8 +4,10 @@ import br.com.gestaopsicologica.DTO.requests.CadastroRequest;
 import br.com.gestaopsicologica.DTO.requests.LoginRequest;
 import br.com.gestaopsicologica.DTO.responses.CadastroResponse;
 import br.com.gestaopsicologica.DTO.responses.LoginResponse;
+import br.com.gestaopsicologica.DTO.responses.UsuarioResponse;
 import br.com.gestaopsicologica.config.TokenConfig;
 import br.com.gestaopsicologica.domain.Usuario;
+import br.com.gestaopsicologica.repository.UsuarioRepository;
 import br.com.gestaopsicologica.services.UsuarioService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,13 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/autenticacao")
@@ -33,6 +34,7 @@ public class AutenticacaoController {
     private final UsuarioService usuarioService;
     private final AuthenticationManager authenticationManager;
     private final TokenConfig tokenConfig;
+    private final UsuarioRepository usuarioRepository;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
@@ -75,5 +77,18 @@ public class AutenticacaoController {
         CadastroResponse response = usuarioService.criarUsuario(cadastroRequest);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UUID usuarioID = (UUID) authentication.getPrincipal();
+
+        Usuario usuario = usuarioRepository.findById(usuarioID).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return ResponseEntity.ok().body(new UsuarioResponse(usuario));
     }
 }
