@@ -9,6 +9,7 @@ import br.com.gestaopsicologica.repository.PacienteRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final PacienteMapper pacienteMapper;
@@ -44,6 +46,7 @@ public class PacienteService {
         return paciente.map(pacienteMapper::toMaxResponse);
     }
 
+    @Transactional
     public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
         Paciente pacienteConvertido = pacienteMapper.toPaciente(paciente);
 
@@ -52,10 +55,12 @@ public class PacienteService {
         return pacienteMapper.toMinResponse(pacienteConvertido);
     }
 
+    @Transactional
     public void removerPaciente(UUID id) {
         pacienteRepository.deleteById(id);
     }
 
+    @Transactional
     public PacienteMinResponse atualizarPaciente(UUID id, PacienteRequest paciente) {
         if (paciente == null || id == null) {
             throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
@@ -84,6 +89,7 @@ public class PacienteService {
         return pacienteMapper.toMinResponse(pacienteAtualizado);
     }
 
+    @Transactional
     public PacienteMaxResponse atualizarPacienteDetalhes(UUID id, PacienteRequest paciente) {
         if (paciente == null || id == null) {
             throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
