@@ -35,15 +35,15 @@ public class PacienteService {
     }
 
     public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
-        Optional<Paciente> paciente = pacienteRepository.findById(id);
-
-        return paciente.map(pacienteMapper::toMinResponse);
+        return Optional.ofNullable(pacienteRepository.findById(id)
+                .map(pacienteMapper::toMinResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado.")));
     }
 
-    public Optional<PacienteMaxResponse> buscarPacientePorIdDetalhes(UUID id) {
-        Optional<Paciente> paciente = pacienteRepository.findById(id);
-
-        return paciente.map(pacienteMapper::toMaxResponse);
+    public PacienteMaxResponse buscarPacientePorIdDetalhes(UUID id) {
+        return pacienteRepository.findById(id)
+                .map(pacienteMapper::toMaxResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
     }
 
     @Transactional
@@ -57,64 +57,48 @@ public class PacienteService {
 
     @Transactional
     public void removerPaciente(UUID id) {
+        if (!pacienteRepository.existsById(id)) {
+            throw new EntityNotFoundException("Paciente com ID " + id + " não encontrado para exclusão.");
+        }
         pacienteRepository.deleteById(id);
     }
 
     @Transactional
-    public PacienteMinResponse atualizarPaciente(UUID id, PacienteRequest paciente) {
-        if (paciente == null || id == null) {
-            throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
-        }
-
-        Paciente pacienteExistente = pacienteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
-
-        if (!pacienteExistente.getNome().equals(paciente.nome()) && paciente.nome() != null) {
-            pacienteExistente.setNome(paciente.nome());
-        }
-
-        if (!pacienteExistente.getEmail().equals(paciente.email()) && paciente.email() != null) {
-            pacienteExistente.setEmail(paciente.email());
-        }
-
-        if (!pacienteExistente.getTelefone().equals(paciente.telefone()) && paciente.telefone() != null) {
-            pacienteExistente.setTelefone(paciente.telefone());
-        }
-
-        if (!pacienteExistente.getValorSessaoPadrao().equals(paciente.valorSessaoPadrao()) && paciente.valorSessaoPadrao() != null) {
-            pacienteExistente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
-        }
-
-        Paciente pacienteAtualizado =  pacienteRepository.save(pacienteExistente);
+    public PacienteMinResponse atualizarPaciente(UUID id, PacienteRequest request) {
+        Paciente pacienteAtualizado = executarAtualizacao(id, request);
         return pacienteMapper.toMinResponse(pacienteAtualizado);
     }
 
     @Transactional
-    public PacienteMaxResponse atualizarPacienteDetalhes(UUID id, PacienteRequest paciente) {
-        if (paciente == null || id == null) {
+    public PacienteMaxResponse atualizarPacienteDetalhes(UUID id, PacienteRequest request) {
+        Paciente pacienteAtualizado = executarAtualizacao(id, request);
+        return pacienteMapper.toMaxResponse(pacienteAtualizado);
+    }
+
+    private Paciente executarAtualizacao(UUID id, PacienteRequest request) {
+        if (request == null || id == null) {
             throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
         }
 
-        Paciente pacienteExistente = pacienteRepository.findById(id)
+        Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
 
-        if (!pacienteExistente.getNome().equals(paciente.nome()) && paciente.nome() != null) {
-            pacienteExistente.setNome(paciente.nome());
+        if (request.nome() != null && !request.nome().equals(paciente.getNome())) {
+            paciente.setNome(request.nome());
         }
 
-        if (!pacienteExistente.getEmail().equals(paciente.email()) && paciente.email() != null) {
-            pacienteExistente.setEmail(paciente.email());
+        if (request.email() != null && !request.email().equals(paciente.getEmail())) {
+            paciente.setEmail(request.email());
         }
 
-        if (!pacienteExistente.getTelefone().equals(paciente.telefone()) && paciente.telefone() != null) {
-            pacienteExistente.setTelefone(paciente.telefone());
+        if (request.telefone() != null && !request.telefone().equals(paciente.getTelefone())) {
+            paciente.setTelefone(request.telefone());
         }
 
-        if (!pacienteExistente.getValorSessaoPadrao().equals(paciente.valorSessaoPadrao()) && paciente.valorSessaoPadrao() != null) {
-            pacienteExistente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
+        if (request.valorSessaoPadrao() != null && !request.valorSessaoPadrao().equals(paciente.getValorSessaoPadrao())) {
+            paciente.setValorSessaoPadrao(request.valorSessaoPadrao());
         }
 
-        Paciente pacienteAtualizado =  pacienteRepository.save(pacienteExistente);
-        return pacienteMapper.toMaxResponse(pacienteAtualizado);
+        return pacienteRepository.save(paciente);
     }
 }

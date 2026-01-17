@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,6 +71,10 @@ public class AgendamentoService {
 
     @Transactional
     public void apagarAgendamento(UUID agendamentoId) {
+        if (!agendamentoRepository.existsById(agendamentoId)) {
+            throw new EntityNotFoundException("Agendamento com ID " + agendamentoId + " não encontrado para exclusão.");
+        }
+
         agendamentoRepository.deleteById(agendamentoId);
     }
 
@@ -101,22 +106,23 @@ public class AgendamentoService {
         LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(duracaoEmMinutos);
 
         LocalDateTime inicioDia = dataHoraInicio.toLocalDate().atStartOfDay();
-        LocalDateTime fimDia = dataHoraFim.toLocalDate().atStartOfDay();
+        LocalDateTime fimDia = dataHoraInicio.toLocalDate().atTime(LocalTime.MAX);
 
         List<Agendamento> agendamentosDoDia = agendamentoRepository
                 .findAgendamentosByUsuarioIdAndDataHoraInicioBetween(usuarioId, inicioDia, fimDia);
 
-        agendamentosDoDia.forEach(agendamento -> {
-            if (agendamento.getId().equals(agendamentoIdParaIgnorar)) {
-                return;
+        for (Agendamento existente : agendamentosDoDia) {
+            if (agendamentoIdParaIgnorar != null && existente.getId().equals(agendamentoIdParaIgnorar)) {
+                continue;
             }
 
-            LocalDateTime existenteFim = agendamento.getDataHoraFim();
+            LocalDateTime existenteFim = existente.getDataHoraFim();
 
-            if (existenteFim.isBefore(dataHoraInicio) && dataHoraFim.isAfter(agendamento.getDataHoraInicio())) {
-                throw new IllegalArgumentException("Horário indisponível. Já existe um agendamento entre "
-                        + agendamento.getDataHoraInicio() + " e " + existenteFim);
+
+            if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio())) {
+                throw new IllegalArgumentException("Conflito de horário! Já existe agendamento das "
+                        + existente.getDataHoraInicio().toLocalTime() + " às " + existenteFim.toLocalTime());
             }
-        });
+        }
     }
 }

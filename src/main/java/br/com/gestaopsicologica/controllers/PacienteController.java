@@ -3,14 +3,11 @@ package br.com.gestaopsicologica.controllers;
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
 import br.com.gestaopsicologica.DTO.responses.PacienteMaxResponse;
 import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
-import br.com.gestaopsicologica.domain.Paciente;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
-import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.services.PacienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,7 +38,7 @@ public class PacienteController {
 
     @GetMapping("/{id}/detalhes")
     public ResponseEntity<PacienteMaxResponse> getByIdMax(@Valid @PathVariable UUID id) {
-        return  ResponseEntity.ok(pacienteService.buscarPacientePorIdDetalhes(id).orElse(null));
+        return  ResponseEntity.ok(pacienteService.buscarPacientePorIdDetalhes(id));
     }
 
     @PostMapping

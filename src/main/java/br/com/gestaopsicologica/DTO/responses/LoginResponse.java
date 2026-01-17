@@ -1,4 +1,4 @@
 package br.com.gestaopsicologica.DTO.responses;
 
-public record LoginResponse(String token) {
+public record LoginResponse(UsuarioResponse usuarioResponse) {
 }

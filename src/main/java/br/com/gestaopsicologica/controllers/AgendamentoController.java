@@ -23,12 +23,12 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarTodosAgendamentos());
     }
 
-    @GetMapping("/{usuarioId}")
+    @GetMapping("/por-usuario/{usuarioId}")
     public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentosPorUsuario(@Valid @PathVariable UUID usuarioId) {
         return ResponseEntity.ok(agendamentoService.listarAgendamentosPorUsuario(usuarioId));
     }
 
-    @GetMapping("/{pacienteId}")
+    @GetMapping("/por-paciente/{pacienteId}")
     public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentosPorPaciente(@PathVariable UUID pacienteId) {
         return ResponseEntity.ok(agendamentoService.listarAgendamentosPorPaciente(pacienteId));
     }

@@ -7,9 +7,9 @@ import br.com.gestaopsicologica.DTO.responses.LoginResponse;
 import br.com.gestaopsicologica.DTO.responses.UsuarioResponse;
 import br.com.gestaopsicologica.config.TokenConfig;
 import br.com.gestaopsicologica.domain.Usuario;
+import br.com.gestaopsicologica.mappers.UsuarioMapper;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import br.com.gestaopsicologica.services.UsuarioService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +35,7 @@ public class AutenticacaoController {
     private final AuthenticationManager authenticationManager;
     private final TokenConfig tokenConfig;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioMapper usuarioMapper;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
@@ -55,7 +56,9 @@ public class AutenticacaoController {
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        return ResponseEntity.ok().build();
+        UsuarioResponse usuarioResponse = usuarioMapper.toResponse(usuario);
+
+        return ResponseEntity.ok(new LoginResponse(usuarioResponse));
     }
 
     @PostMapping("/logout")
