@@ -1,14 +1,18 @@
 package br.com.gestaopsicologica.controllers;
 
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
+import br.com.gestaopsicologica.DTO.requests.UsuarioRequest;
 import br.com.gestaopsicologica.DTO.responses.PacienteMaxResponse;
 import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
+import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
 import br.com.gestaopsicologica.services.PacienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +33,11 @@ public class PacienteController {
     @GetMapping("/detalhes")
     public ResponseEntity<List<PacienteMaxResponse>> listarTodosMax() {
         return ResponseEntity.ok(pacienteService.buscarTodosPacientesDetalhes());
+    }
+
+    @GetMapping("/por-usuario")
+    public ResponseEntity<List<PacienteMaxResponse>> listarPorProfissional() {
+        return ResponseEntity.ok(pacienteService.buscarPacientesPorProfissional());
     }
 
     @GetMapping("/{id}")

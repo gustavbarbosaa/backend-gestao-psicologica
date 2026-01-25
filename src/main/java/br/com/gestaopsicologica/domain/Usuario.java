@@ -3,12 +3,15 @@ package br.com.gestaopsicologica.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
@@ -38,6 +41,21 @@ public class Usuario implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "papel_id")
     )
     private Set<Papel> papeis =  new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Paciente> pacientes;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private Boolean ativo = true;
+
+    @Column
+    @CreationTimestamp
+    private LocalDateTime dataAlteracao;
+
+    @Column
+    @UpdateTimestamp
+    private LocalDateTime dataCriacao;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -1,5 +1,6 @@
 package br.com.gestaopsicologica.mappers;
 
+import br.com.gestaopsicologica.DTO.requests.UsuarioRequest;
 import br.com.gestaopsicologica.DTO.responses.UsuarioResponse;
 import br.com.gestaopsicologica.domain.Usuario;
 import org.mapstruct.Mapper;
@@ -11,5 +12,9 @@ public interface UsuarioMapper {
 
     UsuarioResponse toResponse(Usuario usuario);
 
+    UsuarioRequest toRequest(Usuario usuario);
+
     Usuario toEntity(UsuarioResponse usuarioResponse);
+
+    Usuario toEntity(UsuarioRequest usuarioRequest);
 }

@@ -12,6 +12,7 @@ import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +66,9 @@ public class AgendamentoService {
         return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByPacienteId(pacienteId));
     }
 
-    public List<AgendamentoResponse> listarAgendamentosPorUsuario(UUID usuarioId) {
+    public List<AgendamentoResponse> listarAgendamentosPorUsuario() {
+        UUID usuarioId = UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
+
         return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByUsuarioId(usuarioId));
     }
 

@@ -6,8 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -32,4 +36,20 @@ public class Paciente {
 
     @Column(nullable = false)
     private BigDecimal valorSessaoPadrao;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_profissional_vinculado", nullable = false)
+    private Usuario usuario;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private Boolean ativo = true;
+
+    @Column
+    @CreationTimestamp
+    private LocalDateTime dataAlteracao;
+
+    @Column
+    @UpdateTimestamp
+    private LocalDateTime dataCriacao;
 }

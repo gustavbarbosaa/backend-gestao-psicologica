@@ -1,13 +1,18 @@
 package br.com.gestaopsicologica.services;
 
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
+import br.com.gestaopsicologica.DTO.requests.UsuarioRequest;
 import br.com.gestaopsicologica.DTO.responses.PacienteMaxResponse;
 import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
 import br.com.gestaopsicologica.domain.Paciente;
+import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
+import br.com.gestaopsicologica.mappers.UsuarioMapper;
 import br.com.gestaopsicologica.repository.PacienteRepository;
+import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +26,7 @@ import java.util.UUID;
 public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final PacienteMapper pacienteMapper;
+    private final UsuarioRepository usuarioRepository;
 
     public List<PacienteMinResponse> buscarTodosPacientes() {
         List<Paciente> pacientes = pacienteRepository.findAll();
@@ -46,13 +52,32 @@ public class PacienteService {
                 .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
     }
 
+    public List<PacienteMaxResponse> buscarPacientesPorProfissional() {
+        UUID usuarioId = UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        return pacienteRepository.findByUsuarioId(usuarioId);
+    }
+
     @Transactional
     public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
-        Paciente pacienteConvertido = pacienteMapper.toPaciente(paciente);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        pacienteRepository.save(pacienteConvertido);
+        UUID idUsuario = UUID.fromString(authentication.getName());
 
-        return pacienteMapper.toMinResponse(pacienteConvertido);
+        Usuario usuarioLogado = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado no banco."));
+
+        Paciente novopaciente = new Paciente();
+        novopaciente.setNome(paciente.nome());
+        novopaciente.setEmail(paciente.email());
+        novopaciente.setTelefone(paciente.telefone());
+        novopaciente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
+
+        novopaciente.setUsuario(usuarioLogado);
+
+        pacienteRepository.save(novopaciente);
+
+        return pacienteMapper.toMinResponse(novopaciente);
     }
 
     @Transactional

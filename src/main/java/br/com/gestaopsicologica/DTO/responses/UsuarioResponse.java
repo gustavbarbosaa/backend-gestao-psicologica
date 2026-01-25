@@ -6,8 +6,8 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.List;
 import java.util.UUID;
 
-public record UsuarioResponse(UUID id, String nome, String email, List<String> permissoes) {
+public record UsuarioResponse(UUID id, String nome, String email, List<String> permissoes, Boolean ativo) {
     public UsuarioResponse(Usuario usuario) {
-        this(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
+        this(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList(), usuario.getAtivo());
     }
 }
