@@ -38,7 +38,7 @@ public class Paciente {
     private BigDecimal valorSessaoPadrao;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_profissional_vinculado", nullable = false)
+    @JoinColumn(name = "id_profissional_vinculado", nullable = false, referencedColumnName = "id")
     private Usuario usuario;
 
     @Column(nullable = false, columnDefinition = "boolean default true")

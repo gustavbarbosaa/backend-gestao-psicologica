@@ -85,7 +85,14 @@ public class PacienteService {
         if (!pacienteRepository.existsById(id)) {
             throw new EntityNotFoundException("Paciente com ID " + id + " não encontrado para exclusão.");
         }
-        pacienteRepository.deleteById(id);
+
+        Paciente paciente = pacienteRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Paciente com ID " + id + " não encontrado para exclusão."
+                ));
+
+        paciente.setAtivo(!paciente.getAtivo());
+        pacienteRepository.saveAndFlush(paciente);
     }
 
     @Transactional

@@ -22,4 +22,8 @@ public interface PacienteMapper {
     List<PacienteMaxResponse> toMaxResponseList(List<Paciente> pacientes);
 
     Paciente toPaciente(PacienteRequest paciente);
+
+    Paciente toPaciente(PacienteMinResponse paciente);
+
+    Paciente toPaciente(PacienteMaxResponse paciente);
 }
