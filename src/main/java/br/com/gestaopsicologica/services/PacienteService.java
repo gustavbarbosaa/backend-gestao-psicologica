@@ -91,7 +91,7 @@ public class PacienteService {
                         "Paciente com ID " + id + " não encontrado para exclusão."
                 ));
 
-        paciente.setAtivo(!paciente.getAtivo());
+        paciente.setAtivo(false);
         pacienteRepository.saveAndFlush(paciente);
     }
 

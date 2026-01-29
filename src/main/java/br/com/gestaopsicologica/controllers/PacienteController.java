@@ -61,12 +61,12 @@ public class PacienteController {
         return  ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @PutMapping("{id}/editar")
+    @PatchMapping("/editar/{id}")
     public ResponseEntity<PacienteMinResponse> editar(@Valid @RequestBody PacienteRequest paciente, @PathVariable UUID id) {
         return ResponseEntity.ok(pacienteService.atualizarPaciente(id, paciente));
     }
 
-    @PutMapping("{id}/editar/detalhes")
+    @PatchMapping("/editar/{id}/detalhes")
     public ResponseEntity<PacienteMaxResponse> editarDetalhes(@Valid @RequestBody PacienteRequest paciente, @PathVariable UUID id) {
         return ResponseEntity.ok(pacienteService.atualizarPacienteDetalhes(id, paciente));
     }

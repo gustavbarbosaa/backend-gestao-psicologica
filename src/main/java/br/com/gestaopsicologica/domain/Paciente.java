@@ -27,7 +27,7 @@ public class Paciente {
     @Column(nullable = false)
     private String nome;
 
-    @Column(nullable = true)
+    @Column(nullable = true, unique = true)
     @Email(message = "E-mail no formato inválido")
     private String email;
 
