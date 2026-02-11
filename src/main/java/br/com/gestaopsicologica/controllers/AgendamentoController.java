@@ -35,7 +35,7 @@ public class AgendamentoController {
 
     @PostMapping
     public ResponseEntity<AgendamentoResponse> criarAgendamento(@Valid @RequestBody AgendamentoRequest agendamentoRequest) {
-        return ResponseEntity.ok(agendamentoService.criarAgendamento(agendamentoRequest));
+        return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamento(agendamentoRequest));
     }
 
     @PatchMapping("/editar/{agendamentoId}")
