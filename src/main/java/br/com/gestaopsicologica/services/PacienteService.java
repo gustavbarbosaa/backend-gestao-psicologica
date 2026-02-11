@@ -1,13 +1,11 @@
 package br.com.gestaopsicologica.services;
 
 import br.com.gestaopsicologica.DTO.requests.PacienteRequest;
-import br.com.gestaopsicologica.DTO.requests.UsuarioRequest;
 import br.com.gestaopsicologica.DTO.responses.PacienteMaxResponse;
 import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
 import br.com.gestaopsicologica.domain.Paciente;
 import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.mappers.PacienteMapper;
-import br.com.gestaopsicologica.mappers.UsuarioMapper;
 import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,6 +26,9 @@ public class PacienteService {
     private final PacienteMapper pacienteMapper;
     private final UsuarioRepository usuarioRepository;
 
+    private static final String MENSAGEM_PACIENTE_ID = "Paciente com ID ";
+    private static final String NAO_ENCONTRADO = " não encontrado.";
+
     public List<PacienteMinResponse> buscarTodosPacientes() {
         List<Paciente> pacientes = pacienteRepository.findAll();
 
@@ -43,13 +44,13 @@ public class PacienteService {
     public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
         return Optional.ofNullable(pacienteRepository.findById(id)
                 .map(pacienteMapper::toMinResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado.")));
+                .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO)));
     }
 
     public PacienteMaxResponse buscarPacientePorIdDetalhes(UUID id) {
         return pacienteRepository.findById(id)
                 .map(pacienteMapper::toMaxResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO));
     }
 
     public List<PacienteMaxResponse> buscarPacientesPorProfissional() {
@@ -71,7 +72,6 @@ public class PacienteService {
         novopaciente.setNome(paciente.nome());
         novopaciente.setEmail(paciente.email());
         novopaciente.setTelefone(paciente.telefone());
-        novopaciente.setValorSessaoPadrao(paciente.valorSessaoPadrao());
 
         novopaciente.setUsuario(usuarioLogado);
 
@@ -83,12 +83,12 @@ public class PacienteService {
     @Transactional
     public void removerPaciente(UUID id) {
         if (!pacienteRepository.existsById(id)) {
-            throw new EntityNotFoundException("Paciente com ID " + id + " não encontrado para exclusão.");
+            throw new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + " não encontrado para exclusão.");
         }
 
         Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Paciente com ID " + id + " não encontrado para exclusão."
+                        MENSAGEM_PACIENTE_ID + id + " não encontrado para exclusão."
                 ));
 
         paciente.setAtivo(false);
@@ -113,9 +113,9 @@ public class PacienteService {
         }
 
         Paciente paciente = pacienteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Paciente com ID " + id + " não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO));
 
-        if (request.nome() != null && !request.nome().equals(paciente.getNome())) {
+        if (!request.nome().equals(paciente.getNome())) {
             paciente.setNome(request.nome());
         }
 
@@ -125,10 +125,6 @@ public class PacienteService {
 
         if (request.telefone() != null && !request.telefone().equals(paciente.getTelefone())) {
             paciente.setTelefone(request.telefone());
-        }
-
-        if (request.valorSessaoPadrao() != null && !request.valorSessaoPadrao().equals(paciente.getValorSessaoPadrao())) {
-            paciente.setValorSessaoPadrao(request.valorSessaoPadrao());
         }
 
         return pacienteRepository.save(paciente);
