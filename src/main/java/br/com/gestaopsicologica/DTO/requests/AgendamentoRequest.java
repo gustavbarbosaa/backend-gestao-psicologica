@@ -1,6 +1,5 @@
 package br.com.gestaopsicologica.DTO.requests;
 
-import br.com.gestaopsicologica.enums.StatusPagamento;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,6 +16,8 @@ public record AgendamentoRequest(
         Integer duracaoEmMinutos,
         @NotNull(message = "O paciente é obrigatório para o agendamento")
         UUID pacienteId,
+        @NotNull(message = "O tipo de atendimento e obrigatório")
+        UUID tipoAtendimentoId,
         @NotNull(message = "O profissional é obrigatório")
         UUID usuarioId
 ) {}

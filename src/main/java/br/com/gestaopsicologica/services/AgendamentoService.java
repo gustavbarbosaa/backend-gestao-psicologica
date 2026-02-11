@@ -4,11 +4,13 @@ import br.com.gestaopsicologica.DTO.requests.AgendamentoRequest;
 import br.com.gestaopsicologica.DTO.responses.AgendamentoResponse;
 import br.com.gestaopsicologica.domain.Agendamento;
 import br.com.gestaopsicologica.domain.Paciente;
+import br.com.gestaopsicologica.domain.TipoAtendimento;
 import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.enums.StatusPagamento;
 import br.com.gestaopsicologica.mappers.AgendamentoMapper;
 import br.com.gestaopsicologica.repository.AgendamentoRepository;
 import br.com.gestaopsicologica.repository.PacienteRepository;
+import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -30,6 +31,7 @@ public class AgendamentoService {
     private final AgendamentoMapper agendamentoMapper;
     private final PacienteRepository pacienteRepository;
     private final UsuarioRepository usuarioRepository;
+    private final TipoAtendimentoRepository tipoAtendimentoRepository;
 
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoRequest agendamentoRequest) {
@@ -46,9 +48,13 @@ public class AgendamentoService {
         Paciente paciente = pacienteRepository.findById(agendamentoRequest.pacienteId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado"));
 
+        TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
+                .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
+
         Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
         agendamento.setUsuario(usuario);
         agendamento.setPaciente(paciente);
+        agendamento.setTipoAtendimento(tipoAtendimento);
 
         if (agendamento.getStatusPagamento() == null) {
             agendamento.setStatusPagamento(StatusPagamento.PENDENTE);

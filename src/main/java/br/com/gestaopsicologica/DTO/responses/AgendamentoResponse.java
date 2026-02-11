@@ -11,5 +11,6 @@ public record AgendamentoResponse(
         LocalDateTime dataHoraInicio,
         LocalDateTime dataHoraFim,
         PacienteMinResponse paciente,
+        TipoAtendimentoResponse tipoAtendimento,
         UsuarioResponse usuario
 ) {}
