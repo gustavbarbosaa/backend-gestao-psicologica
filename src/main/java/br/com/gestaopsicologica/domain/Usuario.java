@@ -43,10 +43,10 @@ public class Usuario implements UserDetails, Serializable {
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "papel_id")
     )
-    private transient Set<Papel> papeis =  new HashSet<>();
+    private Set<Papel> papeis =  new HashSet<>();
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private transient List<Paciente> pacientes;
+    private List<Paciente> pacientes;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     @Builder.Default

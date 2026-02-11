@@ -37,7 +37,7 @@ public class Agendamento implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "paciente_id")
-    private transient Paciente paciente;
+    private Paciente paciente;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status_pagamento")
@@ -45,7 +45,7 @@ public class Agendamento implements Serializable {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_atendimento_id")
-    private transient TipoAtendimento tipoAtendimento;
+    private TipoAtendimento tipoAtendimento;
 
     public LocalDateTime getDataHoraFim() {
         return this.dataHoraInicio.plusMinutes(this.duracaoEmMinutos);
