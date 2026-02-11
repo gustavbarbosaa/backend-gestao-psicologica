@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -15,7 +17,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Papel {
+public class Papel implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 9095117044884060582L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,5 +35,5 @@ public class Papel {
             joinColumns = @JoinColumn(name = "papel_id"),
             inverseJoinColumns = @JoinColumn(name = "permissao_id")
     )
-    private Set<Permissao> permissoes =  new HashSet<>();
+    private transient Set<Permissao> permissoes =  new HashSet<>();
 }

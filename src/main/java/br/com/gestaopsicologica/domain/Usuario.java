@@ -8,9 +8,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -19,7 +19,10 @@ import java.util.*;
 @NoArgsConstructor
 @Builder
 @Entity(name = "usuario")
-public class Usuario implements UserDetails {
+public class Usuario implements UserDetails, Serializable {
+    @Serial
+    private static final long serialVersionUID = 5506623895855407795L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -40,21 +43,21 @@ public class Usuario implements UserDetails {
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "papel_id")
     )
-    private Set<Papel> papeis =  new HashSet<>();
+    private transient Set<Papel> papeis =  new HashSet<>();
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Paciente> pacientes;
+    private transient List<Paciente> pacientes;
 
     @Column(nullable = false, columnDefinition = "boolean default true")
     @Builder.Default
     private Boolean ativo = true;
 
     @Column
-    @CreationTimestamp
+    @UpdateTimestamp
     private LocalDateTime dataAlteracao;
 
     @Column
-    @UpdateTimestamp
+    @CreationTimestamp
     private LocalDateTime dataCriacao;
 
     @Override

@@ -8,9 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.CreatedDate;
 
-import java.math.BigDecimal;
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,7 +19,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Entity(name = "paciente")
-public class Paciente {
+public class Paciente implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = -6381254400152342206L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -33,9 +37,6 @@ public class Paciente {
 
     @Column(nullable = true)
     private String telefone;
-
-    @Column(nullable = false)
-    private BigDecimal valorSessaoPadrao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_profissional_vinculado", nullable = false, referencedColumnName = "id")
