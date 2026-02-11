@@ -2,9 +2,7 @@ package br.com.gestaopsicologica.mappers;
 
 import br.com.gestaopsicologica.DTO.requests.AgendamentoRequest;
 import br.com.gestaopsicologica.DTO.responses.AgendamentoResponse;
-import br.com.gestaopsicologica.DTO.responses.PacienteMinResponse;
 import br.com.gestaopsicologica.domain.Agendamento;
-import br.com.gestaopsicologica.domain.Paciente;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 

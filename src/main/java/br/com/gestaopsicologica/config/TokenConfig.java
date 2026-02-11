@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class TokenConfig {
@@ -23,7 +22,7 @@ public class TokenConfig {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         List<String> authorities = usuario.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+                .toList();
 
 
         return JWT.create()
@@ -44,7 +43,7 @@ public class TokenConfig {
                     .id(UUID.fromString(decodedJWT.getClaim("id").asString()))
                     .email(decodedJWT.getSubject())
                     .build());
-        } catch (JWTVerificationException ex) {
+        } catch (JWTVerificationException _) {
             return Optional.empty();
         }
     }
