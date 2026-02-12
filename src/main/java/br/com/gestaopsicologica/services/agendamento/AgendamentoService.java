@@ -1,4 +1,4 @@
-package br.com.gestaopsicologica.services;
+package br.com.gestaopsicologica.services.agendamento;
 
 import br.com.gestaopsicologica.DTO.requests.AgendamentoRequest;
 import br.com.gestaopsicologica.DTO.responses.AgendamentoResponse;
@@ -6,12 +6,18 @@ import br.com.gestaopsicologica.domain.Agendamento;
 import br.com.gestaopsicologica.domain.Paciente;
 import br.com.gestaopsicologica.domain.TipoAtendimento;
 import br.com.gestaopsicologica.domain.Usuario;
+import br.com.gestaopsicologica.enums.StatusAtendimento;
 import br.com.gestaopsicologica.enums.StatusPagamento;
+import br.com.gestaopsicologica.exceptions.PagamentoPendenteException;
+import br.com.gestaopsicologica.exceptions.StatusAtendimentoInvalidoException;
+import br.com.gestaopsicologica.services.agendamento.helpers.AgendamentoHelper;
 import br.com.gestaopsicologica.mappers.AgendamentoMapper;
 import br.com.gestaopsicologica.repository.AgendamentoRepository;
 import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
+import br.com.gestaopsicologica.services.agendamento.states.StatusAtendimentoState;
+import br.com.gestaopsicologica.services.agendamento.states.StatusAtendimentoStateFactory;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +38,9 @@ public class AgendamentoService {
     private final PacienteRepository pacienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final TipoAtendimentoRepository tipoAtendimentoRepository;
+    private final StatusAtendimentoStateFactory statusAtendimentoStateFactory;
+
+    private static final String AGENDAMENTO_NAO_ENCONTRADO = "Agendamento não encontrado.";
 
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoRequest agendamentoRequest) {
@@ -54,6 +63,7 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
         agendamento.setUsuario(usuario);
         agendamento.setPaciente(paciente);
+        agendamento.setStatusAtendimento(StatusAtendimento.CRIADO);
         agendamento.setTipoAtendimento(tipoAtendimento);
 
         if (agendamento.getStatusPagamento() == null) {
@@ -91,7 +101,7 @@ public class AgendamentoService {
     public AgendamentoResponse editarAgendamento(UUID agendamentoId, AgendamentoRequest agendamentoRequest) {
 
         Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
-                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado."));
+                .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
         boolean mudouHorario = agendamentoRequest.dataHoraInicio() != null && !agendamentoRequest.dataHoraInicio().equals(agendamentoExistente.getDataHoraInicio());
         boolean mudouDuracao = agendamentoRequest.duracaoEmMinutos() != null && !agendamentoRequest.duracaoEmMinutos().equals(agendamentoExistente.getDuracaoEmMinutos());
@@ -109,6 +119,30 @@ public class AgendamentoService {
         if (mudouDuracao) agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
 
         return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
+    }
+
+    @Transactional
+    public AgendamentoResponse alterarStatusAtendimento(UUID agendamentoId, StatusAtendimento novoStatus) {
+        Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
+                .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
+
+        if (agendamentoExistente.getStatusAtendimento().equals(novoStatus)) {
+            throw new StatusAtendimentoInvalidoException("Atendimento já está no status " + novoStatus);
+        }
+
+        StatusAtendimentoState state = statusAtendimentoStateFactory.getState(agendamentoExistente.getStatusAtendimento());
+
+        return state.alterarStatus(agendamentoExistente, novoStatus);
+    }
+
+    @Transactional
+    public AgendamentoResponse alterarStatusPagamentoAtendimento(UUID agendamentoId, StatusPagamento statusPagamento) {
+        Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
+                .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
+
+        agendamentoExistente.setStatusPagamento(statusPagamento);
+
+        return agendamentoMapper.toResponse(agendamentoExistente);
     }
 
     private void validaDisponibilidadeDeHorario(UUID usuarioId, LocalDateTime dataHoraInicio, Integer duracaoEmMinutos, UUID agendamentoIdParaIgnorar) {

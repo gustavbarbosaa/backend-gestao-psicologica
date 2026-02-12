@@ -2,5 +2,6 @@ package br.com.gestaopsicologica.enums;
 
 public enum StatusPagamento {
     PENDENTE,
-    CONFIRMADO
+    CONFIRMADO,
+    COBRANCA_GERADA
 }

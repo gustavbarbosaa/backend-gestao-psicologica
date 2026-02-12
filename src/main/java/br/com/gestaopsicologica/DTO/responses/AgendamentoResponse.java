@@ -1,5 +1,6 @@
 package br.com.gestaopsicologica.DTO.responses;
 
+import br.com.gestaopsicologica.enums.StatusAtendimento;
 import br.com.gestaopsicologica.enums.StatusPagamento;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ public record AgendamentoResponse(
         LocalDateTime dataHoraInicio,
         LocalDateTime dataHoraFim,
         PacienteMinResponse paciente,
+        StatusAtendimento statusAtendimento,
         TipoAtendimentoResponse tipoAtendimento,
         UsuarioResponse usuario
 ) {}

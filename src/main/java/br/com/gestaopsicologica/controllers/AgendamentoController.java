@@ -1,8 +1,9 @@
 package br.com.gestaopsicologica.controllers;
 
 import br.com.gestaopsicologica.DTO.requests.AgendamentoRequest;
+import br.com.gestaopsicologica.DTO.requests.AlterarStatusRequest;
 import br.com.gestaopsicologica.DTO.responses.AgendamentoResponse;
-import br.com.gestaopsicologica.services.AgendamentoService;
+import br.com.gestaopsicologica.services.agendamento.AgendamentoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,13 @@ public class AgendamentoController {
     public ResponseEntity<Void> deletarAgendamento(@Valid  @PathVariable UUID agendamentoId) {
         agendamentoService.apagarAgendamento(agendamentoId);
         return  ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AgendamentoResponse> alterarStatus(@PathVariable UUID id, @RequestBody AlterarStatusRequest request) {
+        AgendamentoResponse response = agendamentoService.alterarStatusAtendimento(id, request.statusAtendimento());
+
+        return ResponseEntity.ok(response);
     }
 
 }

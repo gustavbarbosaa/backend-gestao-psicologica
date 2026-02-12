@@ -1,5 +1,6 @@
 package br.com.gestaopsicologica.domain;
 
+import br.com.gestaopsicologica.enums.StatusAtendimento;
 import br.com.gestaopsicologica.enums.StatusPagamento;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,7 +44,10 @@ public class Agendamento implements Serializable {
     @Column(name = "status_pagamento")
     private StatusPagamento statusPagamento;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
+    private StatusAtendimento statusAtendimento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_atendimento_id")
     private TipoAtendimento tipoAtendimento;
 
