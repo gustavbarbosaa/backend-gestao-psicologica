@@ -28,4 +28,16 @@ public class GlobalExceptionHandler {
         RestErrorMessage threatResponse = new RestErrorMessage(HttpStatus.NOT_FOUND, e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(threatResponse);
     }
+
+    @ExceptionHandler(PagamentoPendenteException.class)
+    public ResponseEntity<RestErrorMessage> pagamentoPendente(PagamentoPendenteException e) {
+        RestErrorMessage threatResponse = new RestErrorMessage(HttpStatus.CONFLICT, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(threatResponse);
+    }
+
+    @ExceptionHandler(StatusAtendimentoInvalidoException.class)
+    public ResponseEntity<RestErrorMessage> statusAtendimentoInvalido(StatusAtendimentoInvalidoException e) {
+        RestErrorMessage threatResponse = new RestErrorMessage(HttpStatus.CONFLICT, e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(threatResponse);
+    }
 }
