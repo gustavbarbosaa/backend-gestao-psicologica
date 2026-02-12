@@ -42,7 +42,7 @@ public class TipoAtendimentoService {
         tipoAtendimento.setAtivo(true);
         tipoAtendimentoRepository.save(tipoAtendimento);
 
-        return new TipoAtendimentoRequest(tipoAtendimentoRequest.tipoAtendimento(), tipoAtendimentoRequest.valorPadraoTipoAtendimento());
+        return new TipoAtendimentoRequest(tipoAtendimentoRequest.nome(), tipoAtendimentoRequest.valorPadraoTipoAtendimento());
     }
 
     @Transactional
@@ -50,8 +50,8 @@ public class TipoAtendimentoService {
         TipoAtendimento tipoAtendimentoExistente = tipoAtendimentoRepository.findById(idTipoAtendimento)
                 .orElseThrow(() -> new EntityNotFoundException(TIPO_ATENDIMENTO_NAO_ENCONTRADO));
 
-        if (tipoAtendimentoExistente.getNome() != tipoAtendimentoRequest.tipoAtendimento()) {
-            tipoAtendimentoExistente.setNome(tipoAtendimentoRequest.tipoAtendimento());
+        if (tipoAtendimentoExistente.getNome() != tipoAtendimentoRequest.nome()) {
+            tipoAtendimentoExistente.setNome(tipoAtendimentoRequest.nome());
         }
 
         if (tipoAtendimentoExistente.getValorPadraoTipoAtendimento() != tipoAtendimentoRequest.valorPadraoTipoAtendimento()) {

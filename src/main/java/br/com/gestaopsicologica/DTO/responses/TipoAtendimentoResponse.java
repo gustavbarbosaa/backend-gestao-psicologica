@@ -4,5 +4,5 @@ import br.com.gestaopsicologica.enums.TipoAtendimentoEnum;
 
 import java.math.BigDecimal;
 
-public record TipoAtendimentoResponse(TipoAtendimentoEnum tipoAtendimento, BigDecimal valorPadraoTipoAtendimento) {
+public record TipoAtendimentoResponse(TipoAtendimentoEnum nome, BigDecimal valorPadraoTipoAtendimento) {
 }
