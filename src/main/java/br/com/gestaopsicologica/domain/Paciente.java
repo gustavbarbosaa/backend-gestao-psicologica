@@ -31,11 +31,11 @@ public class Paciente implements Serializable {
     @Column(nullable = false)
     private String nome;
 
-    @Column(nullable = true, unique = true)
+    @Column(unique = true)
     @Email(message = "E-mail no formato inválido")
     private String email;
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String telefone;
 
     @ManyToOne(fetch = FetchType.LAZY)
