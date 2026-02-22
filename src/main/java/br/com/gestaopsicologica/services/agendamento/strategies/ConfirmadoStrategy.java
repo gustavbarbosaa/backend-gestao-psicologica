@@ -1,4 +1,4 @@
-package br.com.gestaopsicologica.services.agendamento.states;
+package br.com.gestaopsicologica.services.agendamento.strategies;
 
 import br.com.gestaopsicologica.DTO.responses.AgendamentoResponse;
 import br.com.gestaopsicologica.domain.Agendamento;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
-public class ConfirmadoState implements StatusAtendimentoState {
+public class ConfirmadoStrategy implements StatusAtendimentoStrategy {
     private final AgendamentoHelper agendamentoHelper;
 
     @Override

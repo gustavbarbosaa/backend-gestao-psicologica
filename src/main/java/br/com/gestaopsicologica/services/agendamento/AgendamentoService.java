@@ -8,16 +8,14 @@ import br.com.gestaopsicologica.domain.TipoAtendimento;
 import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.enums.StatusAtendimento;
 import br.com.gestaopsicologica.enums.StatusPagamento;
-import br.com.gestaopsicologica.exceptions.PagamentoPendenteException;
 import br.com.gestaopsicologica.exceptions.StatusAtendimentoInvalidoException;
-import br.com.gestaopsicologica.services.agendamento.helpers.AgendamentoHelper;
 import br.com.gestaopsicologica.mappers.AgendamentoMapper;
 import br.com.gestaopsicologica.repository.AgendamentoRepository;
 import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
-import br.com.gestaopsicologica.services.agendamento.states.StatusAtendimentoState;
-import br.com.gestaopsicologica.services.agendamento.states.StatusAtendimentoStateFactory;
+import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategy;
+import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategyFactory;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,7 +36,7 @@ public class AgendamentoService {
     private final PacienteRepository pacienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final TipoAtendimentoRepository tipoAtendimentoRepository;
-    private final StatusAtendimentoStateFactory statusAtendimentoStateFactory;
+    private final StatusAtendimentoStrategyFactory statusAtendimentoStateFactory;
 
     private static final String AGENDAMENTO_NAO_ENCONTRADO = "Agendamento não encontrado.";
 
@@ -106,6 +104,7 @@ public class AgendamentoService {
         boolean mudouHorario = agendamentoRequest.dataHoraInicio() != null && !agendamentoRequest.dataHoraInicio().equals(agendamentoExistente.getDataHoraInicio());
         boolean mudouDuracao = agendamentoRequest.duracaoEmMinutos() != null && !agendamentoRequest.duracaoEmMinutos().equals(agendamentoExistente.getDuracaoEmMinutos());
         boolean mudouProfissional = agendamentoRequest.usuarioId() != null && !agendamentoRequest.usuarioId().equals(agendamentoExistente.getUsuario().getId());
+        boolean mudouTipoAgendamento = agendamentoRequest.tipoAtendimentoId() != null && !agendamentoRequest.tipoAtendimentoId().equals(agendamentoExistente.getTipoAtendimento().getId());
 
         if (mudouHorario || mudouDuracao || mudouProfissional) {
             LocalDateTime novoInicio = mudouHorario ? agendamentoRequest.dataHoraInicio() : agendamentoExistente.getDataHoraInicio();
@@ -117,6 +116,11 @@ public class AgendamentoService {
 
         if (mudouHorario) agendamentoExistente.setDataHoraInicio(agendamentoRequest.dataHoraInicio());
         if (mudouDuracao) agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
+        if (mudouTipoAgendamento) {
+            TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
+            agendamentoExistente.setTipoAtendimento(tipoAtendimento);
+        }
 
         return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
     }
@@ -130,7 +134,7 @@ public class AgendamentoService {
             throw new StatusAtendimentoInvalidoException("Atendimento já está no status " + novoStatus);
         }
 
-        StatusAtendimentoState state = statusAtendimentoStateFactory.getState(agendamentoExistente.getStatusAtendimento());
+        StatusAtendimentoStrategy state = statusAtendimentoStateFactory.getState(agendamentoExistente.getStatusAtendimento());
 
         return state.alterarStatus(agendamentoExistente, novoStatus);
     }
