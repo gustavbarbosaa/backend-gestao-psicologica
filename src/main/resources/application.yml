@@ -8,7 +8,7 @@ spring:
   application:
     name: "gestao_psicologica"
   datasource:
-    url: jdbc:postgresql://localhost:5432/db_gestao_psicologica
+    url: "jdbc:postgresql://localhost:5432/db_gestao_psicologica?options=-c%20timezone=America/Fortaleza"
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -18,6 +18,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          timezone: "America/Fortaleza"
 
 
 
