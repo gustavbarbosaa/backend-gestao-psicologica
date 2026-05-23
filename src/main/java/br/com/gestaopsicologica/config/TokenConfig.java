@@ -42,6 +42,7 @@ public class TokenConfig {
             return Optional.of(JWTUsuarioData.builder()
                     .id(UUID.fromString(decodedJWT.getClaim("id").asString()))
                     .email(decodedJWT.getSubject())
+                    .authorities(Optional.ofNullable(decodedJWT.getClaim("authorities").asList(String.class)).orElse(List.of()))
                     .build());
         } catch (JWTVerificationException _) {
             return Optional.empty();
