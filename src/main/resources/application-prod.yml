@@ -16,4 +16,3 @@ app:
       same-site: ${COOKIE_SAMESITE:Lax}
       max-age: ${COOKIE_MAX_AGE:86400}
     swagger-enabled: ${SWAGGER_ENABLED:false}
-    public-signup-enabled: ${PUBLIC_SIGNUP_ENABLED:false}
