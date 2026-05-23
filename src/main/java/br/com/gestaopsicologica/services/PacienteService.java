@@ -10,6 +10,7 @@ import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,40 +31,40 @@ public class PacienteService {
     private static final String NAO_ENCONTRADO = " não encontrado.";
 
     public List<PacienteMinResponse> buscarTodosPacientes() {
-        List<Paciente> pacientes = pacienteRepository.findAll();
+        List<Paciente> pacientes = isAdmin()
+                ? pacienteRepository.findAll()
+                : pacienteRepository.findAllByUsuarioId(getAuthenticatedUserId());
 
         return pacienteMapper.toMinResponseList(pacientes);
     }
 
     public List<PacienteMaxResponse> buscarTodosPacientesDetalhes() {
-        List<Paciente> pacientes = pacienteRepository.findAll();
+        List<Paciente> pacientes = isAdmin()
+                ? pacienteRepository.findAll()
+                : pacienteRepository.findAllByUsuarioId(getAuthenticatedUserId());
 
         return pacienteMapper.toMaxResponseList(pacientes);
     }
 
     public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
-        return Optional.ofNullable(pacienteRepository.findById(id)
+        return Optional.ofNullable(findPacienteByScope(id)
                 .map(pacienteMapper::toMinResponse)
                 .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO)));
     }
 
     public PacienteMaxResponse buscarPacientePorIdDetalhes(UUID id) {
-        return pacienteRepository.findById(id)
+        return findPacienteByScope(id)
                 .map(pacienteMapper::toMaxResponse)
                 .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO));
     }
 
     public List<PacienteMaxResponse> buscarPacientesPorProfissional() {
-        UUID usuarioId = UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
-
-        return pacienteRepository.findByUsuarioId(usuarioId);
+        return pacienteRepository.findByUsuarioId(getAuthenticatedUserId());
     }
 
     @Transactional
     public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        UUID idUsuario = UUID.fromString(authentication.getName());
+        UUID idUsuario = getAuthenticatedUserId();
 
         Usuario usuarioLogado = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado no banco."));
@@ -82,11 +83,7 @@ public class PacienteService {
 
     @Transactional
     public void removerPaciente(UUID id) {
-        if (!pacienteRepository.existsById(id)) {
-            throw new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + " não encontrado para exclusão.");
-        }
-
-        Paciente paciente = pacienteRepository.findById(id)
+        Paciente paciente = findPacienteByScope(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         MENSAGEM_PACIENTE_ID + id + " não encontrado para exclusão."
                 ));
@@ -112,7 +109,7 @@ public class PacienteService {
             throw new IllegalArgumentException("O ID e os dados do Paciente são obrigatórios.");
         }
 
-        Paciente paciente = pacienteRepository.findById(id)
+        Paciente paciente = findPacienteByScope(id)
                 .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO));
 
         if (!request.nome().equals(paciente.getNome())) {
@@ -128,5 +125,24 @@ public class PacienteService {
         }
 
         return pacienteRepository.save(paciente);
+    }
+
+    private Optional<Paciente> findPacienteByScope(UUID id) {
+        if (isAdmin()) {
+            return pacienteRepository.findById(id);
+        }
+
+        return pacienteRepository.findByIdAndUsuarioId(id, getAuthenticatedUserId());
+    }
+
+    private UUID getAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return UUID.fromString(authentication.getName());
+    }
+
+    private boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> "PAPEL_ADMIN".equals(authority.getAuthority()));
     }
 }

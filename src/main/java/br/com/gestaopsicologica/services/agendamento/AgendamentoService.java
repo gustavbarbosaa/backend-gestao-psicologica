@@ -18,6 +18,7 @@ import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendiment
 import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategyFactory;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -42,17 +44,19 @@ public class AgendamentoService {
 
     @Transactional
     public AgendamentoResponse criarAgendamento(AgendamentoRequest agendamentoRequest) {
+        UUID usuarioId = resolveTargetUsuarioId(agendamentoRequest.usuarioId());
+
         validaDisponibilidadeDeHorario(
-                agendamentoRequest.usuarioId(),
+                usuarioId,
                 agendamentoRequest.dataHoraInicio(),
                 agendamentoRequest.duracaoEmMinutos(),
                 null
         );
 
-        Usuario usuario = usuarioRepository.findById(agendamentoRequest.usuarioId())
+        Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
-        Paciente paciente = pacienteRepository.findById(agendamentoRequest.pacienteId())
+        Paciente paciente = findPacienteByScope(agendamentoRequest.pacienteId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado"));
 
         TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
@@ -73,22 +77,26 @@ public class AgendamentoService {
     }
 
     public List<AgendamentoResponse> listarTodosAgendamentos() {
-        return agendamentoMapper.toResponseList(agendamentoRepository.findAll());
+        List<Agendamento> agendamentos = isAdmin()
+                ? agendamentoRepository.findAll()
+                : agendamentoRepository.findAgendamentosByUsuarioId(getAuthenticatedUserId());
+        return agendamentoMapper.toResponseList(agendamentos);
     }
 
     public List<AgendamentoResponse> listarAgendamentosPorPaciente(UUID pacienteId) {
-        return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByPacienteId(pacienteId));
+        List<Agendamento> agendamentos = isAdmin()
+                ? agendamentoRepository.findAgendamentosByPacienteId(pacienteId)
+                : agendamentoRepository.findAgendamentosByPacienteIdAndUsuarioId(pacienteId, getAuthenticatedUserId());
+        return agendamentoMapper.toResponseList(agendamentos);
     }
 
     public List<AgendamentoResponse> listarAgendamentosPorUsuario() {
-        UUID usuarioId = UUID.fromString(SecurityContextHolder.getContext().getAuthentication().getName());
-
-        return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByUsuarioId(usuarioId));
+        return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByUsuarioId(getAuthenticatedUserId()));
     }
 
     @Transactional
     public void apagarAgendamento(UUID agendamentoId) {
-        if (!agendamentoRepository.existsById(agendamentoId)) {
+        if (!findAgendamentoByScope(agendamentoId).isPresent()) {
             throw new EntityNotFoundException("Agendamento com ID " + agendamentoId + " não encontrado para exclusão.");
         }
 
@@ -98,24 +106,30 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoResponse editarAgendamento(UUID agendamentoId, AgendamentoRequest agendamentoRequest) {
 
-        Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
+        Agendamento agendamentoExistente = findAgendamentoByScope(agendamentoId)
                 .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
         boolean mudouHorario = agendamentoRequest.dataHoraInicio() != null && !agendamentoRequest.dataHoraInicio().equals(agendamentoExistente.getDataHoraInicio());
         boolean mudouDuracao = agendamentoRequest.duracaoEmMinutos() != null && !agendamentoRequest.duracaoEmMinutos().equals(agendamentoExistente.getDuracaoEmMinutos());
-        boolean mudouProfissional = agendamentoRequest.usuarioId() != null && !agendamentoRequest.usuarioId().equals(agendamentoExistente.getUsuario().getId());
+        UUID usuarioIdDestino = resolveTargetUsuarioId(agendamentoRequest.usuarioId());
+        boolean mudouProfissional = !usuarioIdDestino.equals(agendamentoExistente.getUsuario().getId());
         boolean mudouTipoAgendamento = agendamentoRequest.tipoAtendimentoId() != null && !agendamentoRequest.tipoAtendimentoId().equals(agendamentoExistente.getTipoAtendimento().getId());
 
         if (mudouHorario || mudouDuracao || mudouProfissional) {
             LocalDateTime novoInicio = mudouHorario ? agendamentoRequest.dataHoraInicio() : agendamentoExistente.getDataHoraInicio();
             Integer novaDuracao = mudouDuracao ? agendamentoRequest.duracaoEmMinutos() : agendamentoExistente.getDuracaoEmMinutos();
-            UUID idProfissional = mudouProfissional ? agendamentoRequest.usuarioId() : agendamentoExistente.getUsuario().getId();
+            UUID idProfissional = mudouProfissional ? usuarioIdDestino : agendamentoExistente.getUsuario().getId();
 
             validaDisponibilidadeDeHorario(idProfissional, novoInicio, novaDuracao, agendamentoId);
         }
 
         if (mudouHorario) agendamentoExistente.setDataHoraInicio(agendamentoRequest.dataHoraInicio());
         if (mudouDuracao) agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
+        if (mudouProfissional) {
+            Usuario usuario = usuarioRepository.findById(usuarioIdDestino)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+            agendamentoExistente.setUsuario(usuario);
+        }
         if (mudouTipoAgendamento) {
             TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
                     .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
@@ -127,7 +141,7 @@ public class AgendamentoService {
 
     @Transactional
     public AgendamentoResponse alterarStatusAtendimento(UUID agendamentoId, StatusAtendimento novoStatus) {
-        Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
+        Agendamento agendamentoExistente = findAgendamentoByScope(agendamentoId)
                 .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
         if (agendamentoExistente.getStatusAtendimento().equals(novoStatus)) {
@@ -141,7 +155,7 @@ public class AgendamentoService {
 
     @Transactional
     public AgendamentoResponse alterarStatusPagamentoAtendimento(UUID agendamentoId, StatusPagamento statusPagamento) {
-        Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
+        Agendamento agendamentoExistente = findAgendamentoByScope(agendamentoId)
                 .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
         if (agendamentoExistente.getStatusPagamento() == statusPagamento) {
@@ -175,5 +189,40 @@ public class AgendamentoService {
                         + existente.getDataHoraInicio().toLocalTime() + " às " + existenteFim.toLocalTime());
             }
         }
+    }
+
+    private Optional<Agendamento> findAgendamentoByScope(UUID agendamentoId) {
+        if (isAdmin()) {
+            return agendamentoRepository.findById(agendamentoId);
+        }
+
+        return agendamentoRepository.findByIdAndUsuarioId(agendamentoId, getAuthenticatedUserId());
+    }
+
+    private Optional<Paciente> findPacienteByScope(UUID pacienteId) {
+        if (isAdmin()) {
+            return pacienteRepository.findById(pacienteId);
+        }
+
+        return pacienteRepository.findByIdAndUsuarioId(pacienteId, getAuthenticatedUserId());
+    }
+
+    private UUID resolveTargetUsuarioId(UUID requestedUsuarioId) {
+        if (isAdmin() && requestedUsuarioId != null) {
+            return requestedUsuarioId;
+        }
+
+        return getAuthenticatedUserId();
+    }
+
+    private UUID getAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return UUID.fromString(authentication.getName());
+    }
+
+    private boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> "PAPEL_ADMIN".equals(authority.getAuthority()));
     }
 }

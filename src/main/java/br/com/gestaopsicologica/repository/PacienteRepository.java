@@ -5,8 +5,15 @@ import br.com.gestaopsicologica.domain.Paciente;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PacienteRepository extends JpaRepository<Paciente, UUID> {
     List<PacienteMaxResponse> findByUsuarioId(UUID usuarioId);
+
+    List<Paciente> findAllByUsuarioId(UUID usuarioId);
+
+    Optional<Paciente> findByIdAndUsuarioId(UUID id, UUID usuarioId);
+
+    boolean existsByIdAndUsuarioId(UUID id, UUID usuarioId);
 }
