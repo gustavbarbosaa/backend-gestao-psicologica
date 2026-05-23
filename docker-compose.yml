@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:latest
+    image: postgres:17-alpine
     container_name: db_gestao_psicologica
     restart: always
     environment:
