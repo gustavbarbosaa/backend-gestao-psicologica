@@ -1,6 +1,8 @@
 package br.com.gestaopsicologica.security;
 
+import br.com.gestaopsicologica.config.CsrfCookieFilter;
 import br.com.gestaopsicologica.config.SecurityFilter;
+import br.com.gestaopsicologica.config.SecurityProperties;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -28,10 +32,19 @@ import java.util.List;
 public class WebSecurityConfig {
 
     private final SecurityFilter securityFilter;
+    private final CsrfCookieFilter csrfCookieFilter;
+    private final SecurityProperties securityProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
+        return http.csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers(
+                                "/api/v1/autenticacao/login",
+                                "/api/v1/autenticacao/logout",
+                                "/api/v1/autenticacao/cadastro"
+                        )
+                )
                 .cors(cors -> cors.configurationSource(this.corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
@@ -46,6 +59,7 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
                 .build();
     }
 
@@ -64,7 +78,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(securityProperties.cors().allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
 
