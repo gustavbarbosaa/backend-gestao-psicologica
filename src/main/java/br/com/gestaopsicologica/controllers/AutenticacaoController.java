@@ -5,6 +5,7 @@ import br.com.gestaopsicologica.DTO.requests.LoginRequest;
 import br.com.gestaopsicologica.DTO.responses.CadastroResponse;
 import br.com.gestaopsicologica.DTO.responses.LoginResponse;
 import br.com.gestaopsicologica.DTO.responses.UsuarioResponse;
+import br.com.gestaopsicologica.config.SecurityProperties;
 import br.com.gestaopsicologica.config.TokenConfig;
 import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.mappers.UsuarioMapper;
@@ -33,6 +34,7 @@ public class AutenticacaoController {
     private final UsuarioService usuarioService;
     private final AuthenticationManager authenticationManager;
     private final TokenConfig tokenConfig;
+    private final SecurityProperties securityProperties;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
 
@@ -45,13 +47,14 @@ public class AutenticacaoController {
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
         String token = tokenConfig.geraToken(usuario);
+        SecurityProperties.Cookie cookieProperties = securityProperties.cookie();
 
         ResponseCookie cookie = ResponseCookie.from("token", token)
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/")
-                .maxAge(Duration.ofDays(1))
+                .maxAge(Duration.ofSeconds(cookieProperties.maxAge()))
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -62,10 +65,12 @@ public class AutenticacaoController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
+        SecurityProperties.Cookie cookieProperties = securityProperties.cookie();
+
         ResponseCookie cookie = ResponseCookie.from("token", "")
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .path("/")
                 .maxAge(0)
                 .build();
