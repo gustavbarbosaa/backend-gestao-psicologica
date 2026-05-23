@@ -42,7 +42,7 @@ public class WebSecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/cadastro").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/cadastro").hasAuthority("PAPEL_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
