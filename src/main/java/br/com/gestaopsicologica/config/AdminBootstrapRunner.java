@@ -32,6 +32,8 @@ public class AdminBootstrapRunner implements ApplicationRunner {
             return;
         }
 
+        validateRequiredProperties();
+
         Papel adminRole = papelRepository.findByNome(ADMIN_ROLE_NAME)
                 .orElseGet(() -> papelRepository.save(Papel.builder().nome(ADMIN_ROLE_NAME).build()));
 
@@ -40,9 +42,12 @@ public class AdminBootstrapRunner implements ApplicationRunner {
             return;
         }
 
-        validateRequiredProperties();
-
-        if (usuarioRepository.findUsuarioByEmail(adminBootstrapProperties.email()).isPresent()) {
+        Usuario existingUser = usuarioRepository.findUsuarioByEmail(adminBootstrapProperties.email().trim()).orElse(null);
+        if (existingUser != null) {
+            existingUser.setNome(adminBootstrapProperties.name().trim());
+            existingUser.setSenha(passwordEncoder.encode(adminBootstrapProperties.password()));
+            existingUser.getPapeis().add(adminRole);
+            usuarioRepository.save(existingUser);
             return;
         }
 
