@@ -3,6 +3,12 @@ server:
 
 app:
   secret: ${APP_SECRET}
+  bootstrap:
+    admin:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      name: ${ADMIN_NAME:}
+      email: ${ADMIN_EMAIL:}
+      password: ${ADMIN_PASSWORD:}
 
 spring:
   application:
@@ -24,5 +30,4 @@ springdoc:
     enabled: ${app.security.swagger-enabled:false}
   swagger-ui:
     enabled: ${app.security.swagger-enabled:false}
-
 
