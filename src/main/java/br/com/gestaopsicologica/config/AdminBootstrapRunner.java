@@ -7,6 +7,7 @@ import br.com.gestaopsicologica.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 
 @Component
+@Order(1)
 @RequiredArgsConstructor
 public class AdminBootstrapRunner implements ApplicationRunner {
     private static final String ADMIN_ROLE_NAME = "ADMIN";
