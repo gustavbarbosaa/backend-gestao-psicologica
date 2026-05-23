@@ -26,6 +26,7 @@ public class AuthorizationSeedRunner implements ApplicationRunner {
 
     private static final List<String> ADMIN_PERMISSIONS = List.of(
             "USUARIO_CADASTRAR",
+            "AGENDAMENTO_VISUALIZAR_TODOS",
             "PACIENTE_VISUALIZAR",
             "PACIENTE_CRIAR",
             "PACIENTE_EDITAR",
@@ -35,6 +36,7 @@ public class AuthorizationSeedRunner implements ApplicationRunner {
             "AGENDAMENTO_EDITAR",
             "AGENDAMENTO_REMOVER",
             "AGENDAMENTO_ALTERAR_STATUS",
+            "PAGAMENTO_ALTERAR",
             "TIPO_ATENDIMENTO_VISUALIZAR",
             "TIPO_ATENDIMENTO_CRIAR",
             "TIPO_ATENDIMENTO_EDITAR",
