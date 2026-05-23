@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: backend-gestao-psicologica
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: APP_SECRET
+        sync: false
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: None
+      - key: COOKIE_MAX_AGE
+        value: "86400"
+      - key: SWAGGER_ENABLED
+        value: "false"

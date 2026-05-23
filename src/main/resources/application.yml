@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   secret: ${APP_SECRET}
@@ -30,4 +30,3 @@ springdoc:
     enabled: ${app.security.swagger-enabled:false}
   swagger-ui:
     enabled: ${app.security.swagger-enabled:false}
-
