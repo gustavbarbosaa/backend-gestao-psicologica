@@ -144,9 +144,13 @@ public class AgendamentoService {
         Agendamento agendamentoExistente = agendamentoRepository.findById(agendamentoId)
                 .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
+        if (agendamentoExistente.getStatusPagamento() == statusPagamento) {
+            throw new IllegalArgumentException("Pagamento já está no status " + statusPagamento);
+        }
+
         agendamentoExistente.setStatusPagamento(statusPagamento);
 
-        return agendamentoMapper.toResponse(agendamentoExistente);
+        return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
     }
 
     private void validaDisponibilidadeDeHorario(UUID usuarioId, LocalDateTime dataHoraInicio, Integer duracaoEmMinutos, UUID agendamentoIdParaIgnorar) {
