@@ -2,24 +2,27 @@ server:
   port: 8080
 
 app:
-  secret: A89021BB51A9236074117917348644CD4C2CB17EE7FB1C51806B73F93A968849
+  secret: ${APP_SECRET}
 
 spring:
   application:
     name: "gestao_psicologica"
   datasource:
-    url: "jdbc:postgresql://localhost:5432/db_gestao_psicologica?options=-c%20timezone=America/Fortaleza"
-    username: postgres
-    password: postgres
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           timezone: "America/Fortaleza"
 
+springdoc:
+  api-docs:
+    enabled: ${app.security.swagger-enabled:false}
+  swagger-ui:
+    enabled: ${app.security.swagger-enabled:false}
 
 

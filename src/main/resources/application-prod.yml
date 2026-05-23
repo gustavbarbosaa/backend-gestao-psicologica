@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.springframework.security: INFO
+
+app:
+  security:
+    cors:
+      allowed-origins: ${ALLOWED_ORIGINS}
+    cookie:
+      secure: ${COOKIE_SECURE:true}
+      same-site: ${COOKIE_SAMESITE:Lax}
+      max-age: ${COOKIE_MAX_AGE:86400}
+    swagger-enabled: ${SWAGGER_ENABLED:false}
+    public-signup-enabled: ${PUBLIC_SIGNUP_ENABLED:false}
