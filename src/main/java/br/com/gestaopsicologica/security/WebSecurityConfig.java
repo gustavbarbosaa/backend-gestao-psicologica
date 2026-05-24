@@ -1,11 +1,8 @@
 package br.com.gestaopsicologica.security;
 
-import br.com.gestaopsicologica.config.CsrfCookieFilter;
 import br.com.gestaopsicologica.config.SecurityFilter;
 import br.com.gestaopsicologica.config.SecurityProperties;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,19 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 @Configuration
 @EnableWebSecurity
@@ -39,20 +29,11 @@ import java.util.function.Supplier;
 public class WebSecurityConfig {
 
     private final SecurityFilter securityFilter;
-    private final CsrfCookieFilter csrfCookieFilter;
     private final SecurityProperties securityProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository())
-                        .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
-                        .ignoringRequestMatchers(
-                                "/api/v1/autenticacao/login",
-                                "/api/v1/autenticacao/logout",
-                                "/api/v1/autenticacao/cadastro"
-                        )
-                )
+        return http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(this.corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
@@ -64,7 +45,7 @@ public class WebSecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/autenticacao/csrf").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/cadastro").hasAuthority("USUARIO_CADASTRAR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/paciente/**").hasAuthority("PACIENTE_VISUALIZAR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/paciente").hasAuthority("PACIENTE_CRIAR")
@@ -84,7 +65,6 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
                 .build();
     }
 
@@ -96,23 +76,6 @@ public class WebSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public CookieCsrfTokenRepository csrfTokenRepository() {
-        SecurityProperties.Cookie cookieProperties = securityProperties.cookie();
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(builder -> {
-            builder.secure(cookieProperties.secure())
-                    .sameSite(cookieProperties.sameSite())
-                    .path("/");
-
-            if (StringUtils.hasText(cookieProperties.domain())) {
-                builder.domain(cookieProperties.domain());
-            }
-        });
-
-        return repository;
     }
 
     @Bean
@@ -143,26 +106,5 @@ public class WebSecurityConfig {
         }
 
         return origin;
-    }
-
-    private static final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
-        private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
-        private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();
-
-        @Override
-        public void handle(HttpServletRequest request, HttpServletResponse response, Supplier<CsrfToken> csrfToken) {
-            this.xor.handle(request, response, csrfToken);
-            csrfToken.get();
-        }
-
-        @Override
-        public String resolveCsrfTokenValue(HttpServletRequest request, CsrfToken csrfToken) {
-            String headerValue = request.getHeader(csrfToken.getHeaderName());
-            if (StringUtils.hasText(headerValue)) {
-                return this.plain.resolveCsrfTokenValue(request, csrfToken);
-            }
-
-            return this.xor.resolveCsrfTokenValue(request, csrfToken);
-        }
     }
 }
