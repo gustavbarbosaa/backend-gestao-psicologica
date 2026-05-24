@@ -45,7 +45,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
                         .ignoringRequestMatchers(
                                 "/api/v1/autenticacao/login",
@@ -99,18 +99,45 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public CookieCsrfTokenRepository csrfTokenRepository() {
+        SecurityProperties.Cookie cookieProperties = securityProperties.cookie();
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookieCustomizer(builder -> builder
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .path("/"));
+
+        return repository;
+    }
+
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        List<String> allowedOrigins = securityProperties.cors().allowedOrigins().stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .map(this::removeTrailingSlash)
+                .toList();
 
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOrigins(securityProperties.cors().allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        if (!allowedOrigins.isEmpty()) {
+            configuration.setAllowedOriginPatterns(allowedOrigins);
+        }
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
         return source;
+    }
+
+    private String removeTrailingSlash(String origin) {
+        if (origin.length() > 1 && origin.endsWith("/")) {
+            return origin.substring(0, origin.length() - 1);
+        }
+
+        return origin;
     }
 
     private static final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
