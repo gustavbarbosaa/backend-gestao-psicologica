@@ -11,8 +11,4 @@ app:
   security:
     cors:
       allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200}
-    cookie:
-      secure: ${COOKIE_SECURE:false}
-      same-site: ${COOKIE_SAMESITE:Lax}
-      max-age: ${COOKIE_MAX_AGE:86400}
     swagger-enabled: ${SWAGGER_ENABLED:true}

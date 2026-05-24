@@ -11,9 +11,4 @@ app:
   security:
     cors:
       allowed-origins: ${ALLOWED_ORIGINS}
-    cookie:
-      secure: ${COOKIE_SECURE:true}
-      same-site: ${COOKIE_SAMESITE:None}
-      max-age: ${COOKIE_MAX_AGE:86400}
-      domain: ${COOKIE_DOMAIN:}
     swagger-enabled: ${SWAGGER_ENABLED:false}
