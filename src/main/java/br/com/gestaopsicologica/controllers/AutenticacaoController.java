@@ -56,6 +56,7 @@ public class AutenticacaoController {
                 .sameSite(cookieProperties.sameSite())
                 .path("/")
                 .maxAge(Duration.ofSeconds(cookieProperties.maxAge()))
+                .domain(cookieProperties.domain())
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -74,6 +75,7 @@ public class AutenticacaoController {
                 .sameSite(cookieProperties.sameSite())
                 .path("/")
                 .maxAge(0)
+                .domain(cookieProperties.domain())
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

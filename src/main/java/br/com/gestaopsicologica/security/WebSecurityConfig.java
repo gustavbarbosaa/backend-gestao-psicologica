@@ -102,10 +102,15 @@ public class WebSecurityConfig {
     public CookieCsrfTokenRepository csrfTokenRepository() {
         SecurityProperties.Cookie cookieProperties = securityProperties.cookie();
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(builder -> builder
-                .secure(cookieProperties.secure())
-                .sameSite(cookieProperties.sameSite())
-                .path("/"));
+        repository.setCookieCustomizer(builder -> {
+            builder.secure(cookieProperties.secure())
+                    .sameSite(cookieProperties.sameSite())
+                    .path("/");
+
+            if (StringUtils.hasText(cookieProperties.domain())) {
+                builder.domain(cookieProperties.domain());
+            }
+        });
 
         return repository;
     }

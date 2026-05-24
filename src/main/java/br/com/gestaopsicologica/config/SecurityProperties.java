@@ -9,7 +9,7 @@ public record SecurityProperties(Cors cors, Cookie cookie) {
 
     public SecurityProperties {
         cors = cors != null ? cors : new Cors(List.of());
-        cookie = cookie != null ? cookie : new Cookie(false, "Lax", 86400);
+        cookie = cookie != null ? cookie : new Cookie(false, "Lax", 86400, null);
     }
 
     public record Cors(List<String> allowedOrigins) {
@@ -21,11 +21,13 @@ public record SecurityProperties(Cors cors, Cookie cookie) {
     public record Cookie(
             boolean secure,
             String sameSite,
-            long maxAge
+            long maxAge,
+            String domain
     ) {
         public Cookie {
             sameSite = sameSite != null ? sameSite : "Lax";
             maxAge = maxAge > 0 ? maxAge : 86400;
+            domain = domain != null && !domain.isBlank() ? domain.trim() : null;
         }
     }
 }
