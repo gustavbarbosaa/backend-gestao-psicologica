@@ -1,18 +1,47 @@
-version: '3.8'
-
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_gestao_psicologica
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      PORT: 8080
+      DB_URL: ${DB_URL:-jdbc:postgresql://db:5432/db_gestao_psicologica?options=-c%20timezone=America/Fortaleza}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-false}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
   db:
     image: postgres:17-alpine
     container_name: db_gestao_psicologica
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: db_gestao_psicologica
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-db_gestao_psicologica}
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-db_gestao_psicologica}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db_data:
