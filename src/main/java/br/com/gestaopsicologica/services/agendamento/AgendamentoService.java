@@ -96,7 +96,7 @@ public class AgendamentoService {
 
     @Transactional
     public void apagarAgendamento(UUID agendamentoId) {
-        if (!findAgendamentoByScope(agendamentoId).isPresent()) {
+        if (findAgendamentoByScope(agendamentoId).isEmpty()) {
             throw new EntityNotFoundException("Agendamento com ID " + agendamentoId + " não encontrado para exclusão.");
         }
 
@@ -177,7 +177,7 @@ public class AgendamentoService {
                 .findAgendamentosByUsuarioIdAndDataHoraInicioBetween(usuarioId, inicioDia, fimDia);
 
         for (Agendamento existente : agendamentosDoDia) {
-            if (agendamentoIdParaIgnorar != null && existente.getId().equals(agendamentoIdParaIgnorar)) {
+            if (existente.getId().equals(agendamentoIdParaIgnorar)) {
                 continue;
             }
 
