@@ -1,5 +1,8 @@
 package br.com.gestaopsicologica.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum Papeis {
     ADMIN("ADMIN"),
     PROFISSIONAL("PROFISSIONAL");
@@ -10,7 +13,4 @@ public enum Papeis {
         this.descricao = descricao;
     }
 
-    public String getDescricao() {
-        return this.descricao;
-    }
 }
