@@ -14,12 +14,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +42,11 @@ public class AutenticacaoController {
                 );
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        if (Boolean.FALSE.equals(usuario.getAtivo())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         String token = tokenConfig.geraToken(usuario);
         UsuarioResponse usuarioResponse = usuarioMapper.toResponse(usuario);
 
@@ -69,5 +76,17 @@ public class AutenticacaoController {
         Usuario usuario = usuarioRepository.findById(usuarioID).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         return ResponseEntity.ok().body(new UsuarioResponse(usuario));
+    }
+
+    @GetMapping("/usuarios")
+    @PreAuthorize("hasAuthority('PAPEL_ADMIN')")
+    public ResponseEntity<List<UsuarioResponse>> listarUsuarios() {
+        return ResponseEntity.ok(usuarioService.listarUsuarios());
+    }
+
+    @PatchMapping("/usuarios/{id}/alterar-situacao")
+    @PreAuthorize("hasAuthority('PAPEL_ADMIN')")
+    public ResponseEntity<UsuarioResponse> toggleSituacaoUsuario(@PathVariable UUID id) {
+        return ResponseEntity.ok(usuarioService.toggleSituacaoUsuario(id));
     }
 }

@@ -62,6 +62,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/tipo-atendimento").hasAuthority("TIPO_ATENDIMENTO_CRIAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/tipo-atendimento/**").hasAuthority("TIPO_ATENDIMENTO_EDITAR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tipo-atendimento/**").hasAuthority("TIPO_ATENDIMENTO_REMOVER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/autenticacao/usuarios/**").hasAuthority("PAPEL_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
