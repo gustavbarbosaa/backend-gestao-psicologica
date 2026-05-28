@@ -56,7 +56,8 @@ public class AuthorizationSeedRunner implements ApplicationRunner {
             "TIPO_ATENDIMENTO_VISUALIZAR",
             "TIPO_ATENDIMENTO_CRIAR",
             "TIPO_ATENDIMENTO_EDITAR",
-            "TIPO_ATENDIMENTO_REMOVER"
+            "TIPO_ATENDIMENTO_REMOVER",
+            "PAGAMENTO_ALTERAR"
     );
 
     private final PermissaoRepository permissaoRepository;
