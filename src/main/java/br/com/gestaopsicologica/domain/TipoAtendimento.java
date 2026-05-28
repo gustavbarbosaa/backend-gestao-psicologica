@@ -31,6 +31,10 @@ public class TipoAtendimento implements Serializable {
     @Column(nullable = false)
     private BigDecimal valorPadraoTipoAtendimento;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     private Boolean ativo;
 
     @CreationTimestamp

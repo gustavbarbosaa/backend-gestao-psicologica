@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,8 +60,9 @@ public class AgendamentoService {
         Paciente paciente = findPacienteByScope(agendamentoRequest.pacienteId())
                 .orElseThrow(() -> new EntityNotFoundException("Paciente não encontrado"));
 
-        TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
+        TipoAtendimento tipoAtendimento = findTipoAtendimentoByScope(agendamentoRequest.tipoAtendimentoId())
                 .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
+        validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioId);
 
         Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
         agendamento.setUsuario(usuario);
@@ -129,10 +131,18 @@ public class AgendamentoService {
             Usuario usuario = usuarioRepository.findById(usuarioIdDestino)
                     .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
             agendamentoExistente.setUsuario(usuario);
+            if (!mudouTipoAgendamento) {
+                validarTipoAtendimentoDoProfissional(agendamentoExistente.getTipoAtendimento(), usuarioIdDestino);
+            }
         }
         if (mudouTipoAgendamento) {
-            TipoAtendimento tipoAtendimento = tipoAtendimentoRepository.findById(agendamentoRequest.tipoAtendimentoId())
+            UUID usuarioIdTipoAtendimento = mudouProfissional
+                    ? usuarioIdDestino
+                    : agendamentoExistente.getUsuario().getId();
+
+            TipoAtendimento tipoAtendimento = findTipoAtendimentoByScope(agendamentoRequest.tipoAtendimentoId())
                     .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
+            validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioIdTipoAtendimento);
             agendamentoExistente.setTipoAtendimento(tipoAtendimento);
         }
 
@@ -205,6 +215,24 @@ public class AgendamentoService {
         }
 
         return pacienteRepository.findByIdAndUsuarioId(pacienteId, getAuthenticatedUserId());
+    }
+
+    private Optional<TipoAtendimento> findTipoAtendimentoByScope(UUID tipoAtendimentoId) {
+        if (isAdmin()) {
+            return tipoAtendimentoRepository.findById(tipoAtendimentoId);
+        }
+
+        return tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, getAuthenticatedUserId());
+    }
+
+    private void validarTipoAtendimentoDoProfissional(TipoAtendimento tipoAtendimento, UUID usuarioId) {
+        UUID usuarioDonoTipoAtendimento = tipoAtendimento.getUsuario() != null
+                ? tipoAtendimento.getUsuario().getId()
+                : null;
+
+        if (!Objects.equals(usuarioDonoTipoAtendimento, usuarioId)) {
+            throw new IllegalArgumentException("O tipo de atendimento não pertence ao profissional informado.");
+        }
     }
 
     private UUID resolveTargetUsuarioId(UUID requestedUsuarioId) {
