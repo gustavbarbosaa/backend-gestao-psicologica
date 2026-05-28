@@ -3,6 +3,7 @@ package br.com.gestaopsicologica.DTO.responses;
 import br.com.gestaopsicologica.enums.StatusAtendimento;
 import br.com.gestaopsicologica.enums.StatusPagamento;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,5 +15,6 @@ public record AgendamentoResponse(
         PacienteMinResponse paciente,
         StatusAtendimento statusAtendimento,
         TipoAtendimentoResponse tipoAtendimento,
-        UsuarioResponse usuario
+        UsuarioResponse usuario,
+        BigDecimal valorAtendimento
 ) {}

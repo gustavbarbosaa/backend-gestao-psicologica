@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -39,6 +40,9 @@ public class Agendamento implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "paciente_id")
     private Paciente paciente;
+
+    @Column(nullable = false)
+    private BigDecimal valorAtendimento;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status_pagamento")

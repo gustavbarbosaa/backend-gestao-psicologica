@@ -69,6 +69,7 @@ public class AgendamentoService {
         agendamento.setPaciente(paciente);
         agendamento.setStatusAtendimento(StatusAtendimento.CRIADO);
         agendamento.setTipoAtendimento(tipoAtendimento);
+        agendamento.setValorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento());
 
         if (agendamento.getStatusPagamento() == null) {
             agendamento.setStatusPagamento(StatusPagamento.PENDENTE);
@@ -144,6 +145,7 @@ public class AgendamentoService {
                     .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
             validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioIdTipoAtendimento);
             agendamentoExistente.setTipoAtendimento(tipoAtendimento);
+            agendamentoExistente.setValorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento());
         }
 
         return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
