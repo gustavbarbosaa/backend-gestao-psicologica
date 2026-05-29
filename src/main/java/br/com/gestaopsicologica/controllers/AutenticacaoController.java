@@ -7,6 +7,7 @@ import br.com.gestaopsicologica.DTO.responses.LoginResponse;
 import br.com.gestaopsicologica.DTO.responses.UsuarioResponse;
 import br.com.gestaopsicologica.config.TokenConfig;
 import br.com.gestaopsicologica.domain.Usuario;
+import br.com.gestaopsicologica.exceptions.records.RestErrorMessage;
 import br.com.gestaopsicologica.mappers.UsuarioMapper;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import br.com.gestaopsicologica.services.UsuarioService;
@@ -35,7 +36,7 @@ public class AutenticacaoController {
     private final UsuarioMapper usuarioMapper;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication authentication =
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.senha())
@@ -44,7 +45,12 @@ public class AutenticacaoController {
         Usuario usuario = (Usuario) authentication.getPrincipal();
 
         if (Boolean.FALSE.equals(usuario.getAtivo())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            RestErrorMessage response = new RestErrorMessage(
+                    HttpStatus.CONFLICT,
+                    "Usuário inativo.",
+                    List.of()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
 
         String token = tokenConfig.geraToken(usuario);
