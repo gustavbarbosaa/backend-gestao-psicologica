@@ -9,7 +9,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AgendamentoRepository extends JpaRepository<Agendamento, UUID> {
+    List<Agendamento> findByAtivoTrue();
+
     List<Agendamento> findAgendamentosByUsuarioId(UUID id);
+
+    List<Agendamento> findAgendamentosByUsuarioIdAndAtivoTrue(UUID id);
 
     List<Agendamento> findAgendamentosByPacienteId(UUID pacienteId);
 

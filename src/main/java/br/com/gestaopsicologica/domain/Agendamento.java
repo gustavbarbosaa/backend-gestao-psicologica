@@ -55,6 +55,10 @@ public class Agendamento implements Serializable {
     @JoinColumn(name = "tipo_atendimento_id")
     private TipoAtendimento tipoAtendimento;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private Boolean ativo = Boolean.TRUE;
+
     public LocalDateTime getDataHoraFim() {
         return this.dataHoraInicio.plusMinutes(this.duracaoEmMinutos);
     }

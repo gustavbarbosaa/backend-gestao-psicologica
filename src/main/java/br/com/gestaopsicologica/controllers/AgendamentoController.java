@@ -24,6 +24,11 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarTodosAgendamentos());
     }
 
+    @GetMapping("/todos/incluindo-inativos")
+    public ResponseEntity<List<AgendamentoResponse>> todosAgendamentosIncluindoInativos() {
+        return ResponseEntity.ok(agendamentoService.listarTodosAgendamentosIncluindoInativos());
+    }
+
     @GetMapping("/por-usuario")
     public ResponseEntity<List<AgendamentoResponse>> buscarAgendamentosPorUsuario() {
         return ResponseEntity.ok(agendamentoService.listarAgendamentosPorUsuario());
@@ -53,6 +58,13 @@ public class AgendamentoController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<AgendamentoResponse> alterarStatus(@PathVariable UUID id, @RequestBody AlterarStatusRequest request) {
         AgendamentoResponse response = agendamentoService.alterarStatusAtendimento(id, request.statusAtendimento());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/inativar")
+    public ResponseEntity<AgendamentoResponse> inativar(@PathVariable UUID id) {
+        AgendamentoResponse response = agendamentoService.inativar(id);
 
         return ResponseEntity.ok(response);
     }

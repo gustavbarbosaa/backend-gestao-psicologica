@@ -16,5 +16,6 @@ public record AgendamentoResponse(
         StatusAtendimento statusAtendimento,
         TipoAtendimentoResponse tipoAtendimento,
         UsuarioResponse usuario,
-        BigDecimal valorAtendimento
+        BigDecimal valorAtendimento,
+        Boolean ativo
 ) {}

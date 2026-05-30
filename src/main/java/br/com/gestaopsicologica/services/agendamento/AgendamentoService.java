@@ -81,6 +81,13 @@ public class AgendamentoService {
 
     public List<AgendamentoResponse> listarTodosAgendamentos() {
         List<Agendamento> agendamentos = isAdmin()
+                ? agendamentoRepository.findByAtivoTrue()
+                : agendamentoRepository.findAgendamentosByUsuarioIdAndAtivoTrue(getAuthenticatedUserId());
+        return agendamentoMapper.toResponseList(agendamentos);
+    }
+
+    public List<AgendamentoResponse> listarTodosAgendamentosIncluindoInativos() {
+        List<Agendamento> agendamentos = isAdmin()
                 ? agendamentoRepository.findAll()
                 : agendamentoRepository.findAgendamentosByUsuarioId(getAuthenticatedUserId());
         return agendamentoMapper.toResponseList(agendamentos);
@@ -179,6 +186,16 @@ public class AgendamentoService {
         return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
     }
 
+    @Transactional
+    public AgendamentoResponse inativar(UUID agendamentoId) {
+        Agendamento agendamentoExistente = findAgendamentoByScope(agendamentoId)
+                .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
+
+        agendamentoExistente.setAtivo(Boolean.FALSE);
+
+        return agendamentoMapper.toResponse(agendamentoRepository.save(agendamentoExistente));
+    }
+
     private void validaDisponibilidadeDeHorario(UUID usuarioId, LocalDateTime dataHoraInicio, Integer duracaoEmMinutos, UUID agendamentoIdParaIgnorar) {
         LocalDateTime dataHoraFim = dataHoraInicio.plusMinutes(duracaoEmMinutos);
 
@@ -196,7 +213,7 @@ public class AgendamentoService {
             LocalDateTime existenteFim = existente.getDataHoraFim();
 
 
-            if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio())) {
+            if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio()) && existente.getAtivo()) {
                 throw new IllegalArgumentException("Conflito de horário! Já existe agendamento das "
                         + existente.getDataHoraInicio().toLocalTime() + " às " + existenteFim.toLocalTime());
             }

@@ -52,6 +52,7 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/paciente/**").hasAuthority("PACIENTE_EDITAR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/paciente/**").hasAuthority("PACIENTE_REMOVER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/agendamento/todos").hasAuthority("AGENDAMENTO_VISUALIZAR_TODOS")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/agendamento/todos/incluindo-inativos").hasAuthority("AGENDAMENTO_VISUALIZAR_TODOS")
                         .requestMatchers(HttpMethod.GET, "/api/v1/agendamento/**").hasAuthority("AGENDAMENTO_VISUALIZAR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/agendamento").hasAuthority("AGENDAMENTO_CRIAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/agendamento/editar/**").hasAuthority("AGENDAMENTO_EDITAR")
