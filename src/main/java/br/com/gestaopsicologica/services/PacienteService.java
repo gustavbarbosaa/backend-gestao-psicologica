@@ -10,8 +10,6 @@ import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,28 +24,29 @@ public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final PacienteMapper pacienteMapper;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     private static final String MENSAGEM_PACIENTE_ID = "Paciente com ID ";
     private static final String NAO_ENCONTRADO = " não encontrado.";
 
     public List<PacienteMinResponse> buscarTodosPacientes() {
-        List<Paciente> pacientes = isAdmin()
+        List<Paciente> pacientes = this.usuarioAutenticadoService.isAdmin()
                 ? pacienteRepository.findAll()
-                : pacienteRepository.findAllByUsuarioId(getAuthenticatedUserId());
+                : pacienteRepository.findAllByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
 
         return pacienteMapper.toMinResponseList(pacientes);
     }
 
     public List<PacienteMaxResponse> buscarTodosPacientesDetalhes() {
-        List<Paciente> pacientes = isAdmin()
+        List<Paciente> pacientes = this.usuarioAutenticadoService.isAdmin()
                 ? pacienteRepository.findAll()
-                : pacienteRepository.findAllByUsuarioId(getAuthenticatedUserId());
+                : pacienteRepository.findAllByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
 
         return pacienteMapper.toMaxResponseList(pacientes);
     }
 
     public Optional<PacienteMinResponse> buscarPacientePorId(UUID id) {
-        return Optional.ofNullable(findPacienteByScope(id)
+        return Optional.of(findPacienteByScope(id)
                 .map(pacienteMapper::toMinResponse)
                 .orElseThrow(() -> new EntityNotFoundException(MENSAGEM_PACIENTE_ID + id + NAO_ENCONTRADO)));
     }
@@ -59,12 +58,12 @@ public class PacienteService {
     }
 
     public List<PacienteMaxResponse> buscarPacientesPorProfissional() {
-        return pacienteRepository.findByUsuarioId(getAuthenticatedUserId());
+        return pacienteRepository.findByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 
     @Transactional
     public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
-        UUID idUsuario = getAuthenticatedUserId();
+        UUID idUsuario = this.usuarioAutenticadoService.buscarUsuarioAutenticado();
 
         Usuario usuarioLogado = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado no banco."));
@@ -128,21 +127,10 @@ public class PacienteService {
     }
 
     private Optional<Paciente> findPacienteByScope(UUID id) {
-        if (isAdmin()) {
+        if (this.usuarioAutenticadoService.isAdmin()) {
             return pacienteRepository.findById(id);
         }
 
-        return pacienteRepository.findByIdAndUsuarioId(id, getAuthenticatedUserId());
-    }
-
-    private UUID getAuthenticatedUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return UUID.fromString(authentication.getName());
-    }
-
-    private boolean isAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> "PAPEL_ADMIN".equals(authority.getAuthority()));
+        return pacienteRepository.findByIdAndUsuarioId(id, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 }

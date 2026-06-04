@@ -9,8 +9,6 @@ import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,14 +24,15 @@ public class TipoAtendimentoService {
     private final TipoAtendimentoRepository tipoAtendimentoRepository;
     private final TipoAtendimentoMapper tipoAtendimentoMapper;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     private static final String TIPO_ATENDIMENTO_NAO_ENCONTRADO =
             "Não foi encontrado nenhum tipo de atendimento correspondente!";
 
     public List<TipoAtendimentoResponse> verTiposAtendimento() {
-        List<TipoAtendimento> tipoAtendimentos = isAdmin()
+        List<TipoAtendimento> tipoAtendimentos = this.usuarioAutenticadoService.isAdmin()
                 ? tipoAtendimentoRepository.findAll()
-                : tipoAtendimentoRepository.findAllByUsuarioId(getAuthenticatedUserId());
+                : tipoAtendimentoRepository.findAllByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
 
         return tipoAtendimentoMapper.toResponseList(tipoAtendimentos);
     }
@@ -47,7 +46,7 @@ public class TipoAtendimentoService {
 
     @Transactional
     public TipoAtendimentoRequest criarTipoAtendimento(TipoAtendimentoRequest tipoAtendimentoRequest) {
-        UUID usuarioId = resolveTargetUsuarioId(tipoAtendimentoRequest.usuarioId());
+        UUID usuarioId = this.usuarioAutenticadoService.resolveTargetUsuarioId(tipoAtendimentoRequest.usuarioId());
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado."));
 
@@ -80,7 +79,7 @@ public class TipoAtendimentoService {
                 ? tipoAtendimentoExistente.getUsuario().getId()
                 : null;
         UUID usuarioIdDestino = tipoAtendimentoRequest.usuarioId() != null
-                ? resolveTargetUsuarioId(tipoAtendimentoRequest.usuarioId())
+                ? this.usuarioAutenticadoService.resolveTargetUsuarioId(tipoAtendimentoRequest.usuarioId())
                 : usuarioAtualId;
         if (!Objects.equals(usuarioIdDestino, usuarioAtualId)) {
             Usuario usuario = usuarioRepository.findById(usuarioIdDestino)
@@ -102,29 +101,10 @@ public class TipoAtendimentoService {
     }
 
     private Optional<TipoAtendimento> findTipoAtendimentoByScope(UUID idTipoAtendimento) {
-        if (isAdmin()) {
+        if (this.usuarioAutenticadoService.isAdmin()) {
             return tipoAtendimentoRepository.findById(idTipoAtendimento);
         }
 
-        return tipoAtendimentoRepository.findByIdAndUsuarioId(idTipoAtendimento, getAuthenticatedUserId());
-    }
-
-    private UUID resolveTargetUsuarioId(UUID requestedUsuarioId) {
-        if (isAdmin() && requestedUsuarioId != null) {
-            return requestedUsuarioId;
-        }
-
-        return getAuthenticatedUserId();
-    }
-
-    private UUID getAuthenticatedUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return UUID.fromString(authentication.getName());
-    }
-
-    private boolean isAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> "PAPEL_ADMIN".equals(authority.getAuthority()));
+        return tipoAtendimentoRepository.findByIdAndUsuarioId(idTipoAtendimento, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 }

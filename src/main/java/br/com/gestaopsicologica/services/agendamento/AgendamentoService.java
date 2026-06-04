@@ -14,6 +14,8 @@ import br.com.gestaopsicologica.repository.AgendamentoRepository;
 import br.com.gestaopsicologica.repository.PacienteRepository;
 import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
+import br.com.gestaopsicologica.services.EvolucaoPsicologicaService;
+import br.com.gestaopsicologica.services.UsuarioAutenticadoService;
 import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategy;
 import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategyFactory;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,6 +42,8 @@ public class AgendamentoService {
     private final UsuarioRepository usuarioRepository;
     private final TipoAtendimentoRepository tipoAtendimentoRepository;
     private final StatusAtendimentoStrategyFactory statusAtendimentoStateFactory;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
+    private final EvolucaoPsicologicaService evolucaoPsicologicaService;
 
     private static final String AGENDAMENTO_NAO_ENCONTRADO = "Agendamento não encontrado.";
 
@@ -76,32 +80,34 @@ public class AgendamentoService {
         }
 
         agendamento = agendamentoRepository.save(agendamento);
+        evolucaoPsicologicaService.criar(agendamento);
+
         return agendamentoMapper.toResponse(agendamento);
     }
 
     public List<AgendamentoResponse> listarTodosAgendamentos() {
-        List<Agendamento> agendamentos = isAdmin()
+        List<Agendamento> agendamentos = this.usuarioAutenticadoService.isAdmin()
                 ? agendamentoRepository.findByAtivoTrue()
-                : agendamentoRepository.findAgendamentosByUsuarioIdAndAtivoTrue(getAuthenticatedUserId());
+                : agendamentoRepository.findAgendamentosByUsuarioIdAndAtivoTrue(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
         return agendamentoMapper.toResponseList(agendamentos);
     }
 
     public List<AgendamentoResponse> listarTodosAgendamentosIncluindoInativos() {
-        List<Agendamento> agendamentos = isAdmin()
+        List<Agendamento> agendamentos = this.usuarioAutenticadoService.isAdmin()
                 ? agendamentoRepository.findAll()
-                : agendamentoRepository.findAgendamentosByUsuarioId(getAuthenticatedUserId());
+                : agendamentoRepository.findAgendamentosByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado());
         return agendamentoMapper.toResponseList(agendamentos);
     }
 
     public List<AgendamentoResponse> listarAgendamentosPorPaciente(UUID pacienteId) {
-        List<Agendamento> agendamentos = isAdmin()
+        List<Agendamento> agendamentos = this.usuarioAutenticadoService.isAdmin()
                 ? agendamentoRepository.findAgendamentosByPacienteId(pacienteId)
-                : agendamentoRepository.findAgendamentosByPacienteIdAndUsuarioId(pacienteId, getAuthenticatedUserId());
+                : agendamentoRepository.findAgendamentosByPacienteIdAndUsuarioId(pacienteId, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
         return agendamentoMapper.toResponseList(agendamentos);
     }
 
     public List<AgendamentoResponse> listarAgendamentosPorUsuario() {
-        return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByUsuarioId(getAuthenticatedUserId()));
+        return agendamentoMapper.toResponseList(agendamentoRepository.findAgendamentosByUsuarioId(this.usuarioAutenticadoService.buscarUsuarioAutenticado()));
     }
 
     @Transactional
@@ -213,7 +219,7 @@ public class AgendamentoService {
             LocalDateTime existenteFim = existente.getDataHoraFim();
 
 
-            if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio()) && existente.getAtivo()) {
+            if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio()) && Boolean.TRUE.equals(existente.getAtivo())) {
                 throw new IllegalArgumentException("Conflito de horário! Já existe agendamento das "
                         + existente.getDataHoraInicio().toLocalTime() + " às " + existenteFim.toLocalTime());
             }
@@ -221,27 +227,27 @@ public class AgendamentoService {
     }
 
     private Optional<Agendamento> findAgendamentoByScope(UUID agendamentoId) {
-        if (isAdmin()) {
+        if (this.usuarioAutenticadoService.isAdmin()) {
             return agendamentoRepository.findById(agendamentoId);
         }
 
-        return agendamentoRepository.findByIdAndUsuarioId(agendamentoId, getAuthenticatedUserId());
+        return agendamentoRepository.findByIdAndUsuarioId(agendamentoId, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 
     private Optional<Paciente> findPacienteByScope(UUID pacienteId) {
-        if (isAdmin()) {
+        if (this.usuarioAutenticadoService.isAdmin()) {
             return pacienteRepository.findById(pacienteId);
         }
 
-        return pacienteRepository.findByIdAndUsuarioId(pacienteId, getAuthenticatedUserId());
+        return pacienteRepository.findByIdAndUsuarioId(pacienteId, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 
     private Optional<TipoAtendimento> findTipoAtendimentoByScope(UUID tipoAtendimentoId) {
-        if (isAdmin()) {
+        if (this.usuarioAutenticadoService.isAdmin()) {
             return tipoAtendimentoRepository.findById(tipoAtendimentoId);
         }
 
-        return tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, getAuthenticatedUserId());
+        return tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, this.usuarioAutenticadoService.buscarUsuarioAutenticado());
     }
 
     private void validarTipoAtendimentoDoProfissional(TipoAtendimento tipoAtendimento, UUID usuarioId) {
@@ -255,21 +261,10 @@ public class AgendamentoService {
     }
 
     private UUID resolveTargetUsuarioId(UUID requestedUsuarioId) {
-        if (isAdmin() && requestedUsuarioId != null) {
+        if (this.usuarioAutenticadoService.isAdmin() && requestedUsuarioId != null) {
             return requestedUsuarioId;
         }
 
-        return getAuthenticatedUserId();
-    }
-
-    private UUID getAuthenticatedUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return UUID.fromString(authentication.getName());
-    }
-
-    private boolean isAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> "PAPEL_ADMIN".equals(authority.getAuthority()));
+        return this.usuarioAutenticadoService.buscarUsuarioAutenticado();
     }
 }
