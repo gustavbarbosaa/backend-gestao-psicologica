@@ -2,6 +2,8 @@ server:
   port: ${PORT:9090}
 
 app:
+  crypto:
+    evolucao-key: ${CRYPTO_KEY}
   secret: ${APP_SECRET}
   timezone: ${APP_TIMEZONE:America/Fortaleza}
   bootstrap:
