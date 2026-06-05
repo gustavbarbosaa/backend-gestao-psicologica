@@ -42,9 +42,14 @@ public class WebSecurityConfig {
                                 "/health",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api/v1/autenticacao/login",
+                                "/api/v1/autenticacao/google",
+                                "/api/v1/autenticacao/cadastro",
+                                "/api/v1/autenticacao/logout"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/autenticacao/cadastro").hasAuthority("USUARIO_CADASTRAR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/paciente/**").hasAuthority("PACIENTE_VISUALIZAR")

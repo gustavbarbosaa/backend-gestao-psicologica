@@ -35,3 +35,6 @@ springdoc:
     enabled: ${app.security.swagger-enabled:false}
   swagger-ui:
     enabled: ${app.security.swagger-enabled:false}
+
+google:
+  cliente-id: ${GOOGLE_CLIENTE_ID}

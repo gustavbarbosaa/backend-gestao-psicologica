@@ -1,6 +1,7 @@
 package br.com.gestaopsicologica.controllers;
 
 import br.com.gestaopsicologica.DTO.requests.CadastroRequest;
+import br.com.gestaopsicologica.DTO.requests.GoogleLoginRequest;
 import br.com.gestaopsicologica.DTO.requests.LoginRequest;
 import br.com.gestaopsicologica.DTO.responses.CadastroResponse;
 import br.com.gestaopsicologica.DTO.responses.LoginResponse;
@@ -10,6 +11,7 @@ import br.com.gestaopsicologica.domain.Usuario;
 import br.com.gestaopsicologica.exceptions.records.RestErrorMessage;
 import br.com.gestaopsicologica.mappers.UsuarioMapper;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
+import br.com.gestaopsicologica.services.GoogleAuthService;
 import br.com.gestaopsicologica.services.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class AutenticacaoController {
     private final TokenConfig tokenConfig;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
+    private final GoogleAuthService googleAuthService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -57,6 +60,12 @@ public class AutenticacaoController {
         UsuarioResponse usuarioResponse = usuarioMapper.toResponse(usuario);
 
         return ResponseEntity.ok(new LoginResponse(token, usuarioResponse));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> loginGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        LoginResponse response = googleAuthService.login(request.idToken());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

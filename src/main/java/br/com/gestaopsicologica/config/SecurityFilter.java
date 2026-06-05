@@ -25,6 +25,16 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final TokenConfig tokenConfig;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.equals("/api/v1/autenticacao/login")
+                || path.equals("/api/v1/autenticacao/google")
+                || path.equals("/api/v1/autenticacao/cadastro")
+                || path.equals("/api/v1/autenticacao/logout");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
         if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {

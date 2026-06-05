@@ -1,5 +1,6 @@
 package br.com.gestaopsicologica.domain;
 
+import br.com.gestaopsicologica.enums.AuthProvider;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
@@ -51,6 +52,16 @@ public class Usuario implements UserDetails, Serializable {
     @Column(nullable = false, columnDefinition = "boolean default true")
     @Builder.Default
     private Boolean ativo = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthProvider provider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(name = "foto_url")
+    private String fotoUrl;
 
     @Column
     @UpdateTimestamp
