@@ -48,9 +48,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: '22'
           script: |
-            cd /home/ec2-user/gestao_psico/backend-gestao-psicologica
+            cd /home/ec2-user/gestao_psico
             
-            git pull origin main
+            git -C backend-gestao-psicologica pull origin main
             
             docker-compose build backend_gestao_psicologica
             
