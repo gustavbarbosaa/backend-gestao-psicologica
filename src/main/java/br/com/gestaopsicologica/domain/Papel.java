@@ -35,5 +35,6 @@ public class Papel implements Serializable {
             joinColumns = @JoinColumn(name = "papel_id"),
             inverseJoinColumns = @JoinColumn(name = "permissao_id")
     )
+    @Builder.Default
     private Set<Permissao> permissoes =  new HashSet<>();
 }
