@@ -48,7 +48,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: '22'
           script: |
-            cd /gestao_psico/backend-gestao-psicologica
+            cd /home/ec2-user/gestao_psico/backend-gestao-psicologica
             
             git pull origin main
             
