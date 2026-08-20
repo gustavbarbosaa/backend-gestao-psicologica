@@ -62,7 +62,7 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteMinResponse criarPaciente (PacienteRequest paciente) {
+    public PacienteMinResponse criarPaciente(PacienteRequest paciente) {
         UUID idUsuario = this.usuarioAutenticadoService.buscarUsuarioAutenticado();
 
         Usuario usuarioLogado = usuarioRepository.findById(idUsuario)
@@ -70,7 +70,7 @@ public class PacienteService {
 
         Paciente novopaciente = new Paciente();
         novopaciente.setNome(paciente.nome());
-        novopaciente.setEmail(paciente.email());
+        novopaciente.setEmail(normalizarEmail(paciente.email()));
         novopaciente.setTelefone(paciente.telefone());
 
         novopaciente.setUsuario(usuarioLogado);
@@ -116,7 +116,7 @@ public class PacienteService {
         }
 
         if (request.email() != null && !request.email().equals(paciente.getEmail())) {
-            paciente.setEmail(request.email());
+            paciente.setEmail(normalizarEmail(request.email()));
         }
 
         if (request.telefone() != null && !request.telefone().equals(paciente.getTelefone())) {
@@ -124,6 +124,14 @@ public class PacienteService {
         }
 
         return pacienteRepository.save(paciente);
+    }
+
+    private String normalizarEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        return email;
     }
 
     private Optional<Paciente> findPacienteByScope(UUID id) {
