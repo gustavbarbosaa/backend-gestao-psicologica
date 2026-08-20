@@ -20,8 +20,6 @@ import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendiment
 import br.com.gestaopsicologica.services.agendamento.strategies.StatusAtendimentoStrategyFactory;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +33,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+//TODO refatorar service para separar responsabilidades
+// Criando classes especificas apenas para pagamento, tipo de atendimento e verificação de horário
 public class AgendamentoService {
     private final AgendamentoRepository agendamentoRepository;
     private final AgendamentoMapper agendamentoMapper;
@@ -66,6 +66,7 @@ public class AgendamentoService {
 
         TipoAtendimento tipoAtendimento = findTipoAtendimentoByScope(agendamentoRequest.tipoAtendimentoId())
                 .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
+
         validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioId);
 
         Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
@@ -119,6 +120,7 @@ public class AgendamentoService {
         agendamentoRepository.deleteById(agendamentoId);
     }
 
+    //TODO: refatorar método para reduzir a complexidade
     @Transactional
     public AgendamentoResponse editarAgendamento(UUID agendamentoId, AgendamentoRequest agendamentoRequest) {
 
@@ -217,7 +219,6 @@ public class AgendamentoService {
             }
 
             LocalDateTime existenteFim = existente.getDataHoraFim();
-
 
             if (dataHoraInicio.isBefore(existenteFim) && dataHoraFim.isAfter(existente.getDataHoraInicio()) && Boolean.TRUE.equals(existente.getAtivo())) {
                 throw new IllegalArgumentException("Conflito de horário! Já existe agendamento das "
