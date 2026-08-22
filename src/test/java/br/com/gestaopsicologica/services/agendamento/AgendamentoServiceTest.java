@@ -103,14 +103,14 @@ class AgendamentoServiceTest {
     @Test
     void deveSalvarAgendamentoQuandoDadosForemValidos() {
         UUID agendamentoId = UUID.randomUUID();
-        UUID usuarioId = this.usuarioIdValido();
-        UUID pacienteId = this.pacienteIdValido();
-        UUID tipoAtendimentoId = this.tipoAtendimentoIdValido();
+        UUID usuarioId = usuarioIdValido();
+        UUID pacienteId = pacienteIdValido();
+        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
         LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
 
-        Usuario usuario = this.usuarioValido(usuarioId);
-        Paciente paciente = this.pacienteValido(pacienteId, usuario);
-        TipoAtendimento tipoAtendimento = this.tipoAtendimentoValido(tipoAtendimentoId, usuario);
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
         AgendamentoRequest request = new AgendamentoRequest(
                 inicio,
