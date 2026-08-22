@@ -100,6 +100,74 @@ class AgendamentoServiceTest {
                 .build();
     }
 
+    private AgendamentoRequest criarRequestValido(
+            LocalDateTime inicio,
+            UUID pacienteId,
+            UUID tipoAtendimentoId,
+            UUID usuarioId
+    ) {
+        return new AgendamentoRequest(
+                inicio,
+                60,
+                pacienteId,
+                tipoAtendimentoId,
+                usuarioId
+        );
+    }
+
+    private Agendamento criarAgendamentoMapeado(LocalDateTime inicio) {
+        return Agendamento.builder()
+                .dataHoraInicio(inicio)
+                .duracaoEmMinutos(60)
+                .build();
+    }
+
+    private Agendamento criarAgendamentoExistente(
+            LocalDateTime inicio,
+            boolean ativo
+    ) {
+        return Agendamento.builder()
+                .id(UUID.randomUUID())
+                .dataHoraInicio(inicio)
+                .duracaoEmMinutos(60)
+                .ativo(ativo)
+                .build();
+    }
+
+    private AgendamentoResponse criarResponseEsperado(UUID agendamentoId, LocalDateTime inicio, TipoAtendimento tipoAtendimento) {
+        return new AgendamentoResponse(
+                agendamentoId,
+                StatusPagamento.PENDENTE,
+                inicio,
+                inicio.plusMinutes(60),
+                null,
+                StatusAtendimento.CRIADO,
+                null,
+                null,
+                tipoAtendimento.getValorPadraoTipoAtendimento(),
+                true
+        );
+    }
+
+    private void assertAgendamentoCriadoCorretamente(
+            ArgumentCaptor<Agendamento> agendamentoCaptor,
+            LocalDateTime inicio,
+            Usuario usuario,
+            Paciente paciente,
+            TipoAtendimento tipoAtendimento
+    ) {
+        Agendamento agendamentoSalvo = agendamentoCaptor.getValue();
+        assertEquals(inicio, agendamentoSalvo.getDataHoraInicio());
+        assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
+        assertEquals(inicio.plusMinutes(60), agendamentoSalvo.getDataHoraFim());
+        assertSame(usuario, agendamentoSalvo.getUsuario());
+        assertSame(paciente, agendamentoSalvo.getPaciente());
+        assertSame(tipoAtendimento, agendamentoSalvo.getTipoAtendimento());
+        assertEquals(StatusAtendimento.CRIADO, agendamentoSalvo.getStatusAtendimento());
+        assertEquals(StatusPagamento.PENDENTE, agendamentoSalvo.getStatusPagamento());
+        assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), agendamentoSalvo.getValorAtendimento());
+    }
+
     @Test
     void deveSalvarAgendamentoQuandoDadosForemValidos() {
         UUID agendamentoId = UUID.randomUUID();
@@ -112,31 +180,11 @@ class AgendamentoServiceTest {
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = new AgendamentoRequest(
-                inicio,
-                60,
-                pacienteId,
-                tipoAtendimentoId,
-                usuarioId
-        );
+        AgendamentoRequest request = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
 
-        Agendamento agendamentoMapeado = Agendamento.builder()
-                .dataHoraInicio(inicio)
-                .duracaoEmMinutos(60)
-                .build();
+        Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicio);
 
-        AgendamentoResponse responseEsperado = new AgendamentoResponse(
-                agendamentoId,
-                StatusPagamento.PENDENTE,
-                inicio,
-                inicio.plusMinutes(60),
-                null,
-                StatusAtendimento.CRIADO,
-                null,
-                null,
-                tipoAtendimento.getValorPadraoTipoAtendimento(),
-                true
-        );
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicio, tipoAtendimento);
 
         when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
         when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
@@ -162,15 +210,7 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        Agendamento agendamentoSalvo = agendamentoCaptor.getValue();
-        assertEquals(inicio, agendamentoSalvo.getDataHoraInicio());
-        assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
-        assertSame(usuario, agendamentoSalvo.getUsuario());
-        assertSame(paciente, agendamentoSalvo.getPaciente());
-        assertSame(tipoAtendimento, agendamentoSalvo.getTipoAtendimento());
-        assertEquals(StatusAtendimento.CRIADO, agendamentoSalvo.getStatusAtendimento());
-        assertEquals(StatusPagamento.PENDENTE, agendamentoSalvo.getStatusPagamento());
-        assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), agendamentoSalvo.getValorAtendimento());
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicio, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
@@ -184,21 +224,9 @@ class AgendamentoServiceTest {
         LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 0);
 
+        AgendamentoRequest novoAgendamentoConflito = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
 
-        AgendamentoRequest novoAgendamentoConflito = new AgendamentoRequest(
-                inicioNovoAgendamento,
-                60,
-                pacienteId,
-                tipoAtendimentoId,
-                usuarioId
-        );
-
-        Agendamento agendamentoExistenteMapeado = Agendamento.builder()
-                .id(UUID.randomUUID())
-                .dataHoraInicio(inicio)
-                .duracaoEmMinutos(60)
-                .ativo(true)
-                .build();
+        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicio, true);
 
         when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
         when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
@@ -237,38 +265,13 @@ class AgendamentoServiceTest {
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = new AgendamentoRequest(
-                inicioNovoAgendamento,
-                60,
-                pacienteId,
-                tipoAtendimentoId,
-                usuarioId
-        );
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
 
-        Agendamento agendamentoMapeado = Agendamento.builder()
-                .dataHoraInicio(inicioNovoAgendamento)
-                .duracaoEmMinutos(60)
-                .build();
+        Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicioNovoAgendamento);
 
-        AgendamentoResponse responseEsperado = new AgendamentoResponse(
-                agendamentoId,
-                StatusPagamento.PENDENTE,
-                inicioNovoAgendamento,
-                inicioNovoAgendamento.plusMinutes(60),
-                null,
-                StatusAtendimento.CRIADO,
-                null,
-                null,
-                tipoAtendimento.getValorPadraoTipoAtendimento(),
-                true
-        );
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicioNovoAgendamento, tipoAtendimento);
 
-        Agendamento agendamentoExistenteMapeado = Agendamento.builder()
-                .id(UUID.randomUUID())
-                .dataHoraInicio(inicioAgendamentoExistente)
-                .duracaoEmMinutos(60)
-                .ativo(false)
-                .build();
+        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicioAgendamentoExistente, false);
 
         when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
         when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
@@ -294,66 +297,32 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        Agendamento agendamentoSalvo = agendamentoCaptor.getValue();
-        assertEquals(inicioNovoAgendamento, agendamentoSalvo.getDataHoraInicio());
-        assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
-        assertEquals(inicioNovoAgendamento.plusMinutes(60), agendamentoSalvo.getDataHoraFim());
-        assertSame(usuario, agendamentoSalvo.getUsuario());
-        assertSame(paciente, agendamentoSalvo.getPaciente());
-        assertSame(tipoAtendimento, agendamentoSalvo.getTipoAtendimento());
-        assertEquals(StatusAtendimento.CRIADO, agendamentoSalvo.getStatusAtendimento());
-        assertEquals(StatusPagamento.PENDENTE, agendamentoSalvo.getStatusPagamento());
-        assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), agendamentoSalvo.getValorAtendimento());
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
     }
 
     @Test
-    void deveCriarAgendamentoQuandoNovoHorarioComecarNoFimDoExistent() {
+    void deveCriarAgendamentoQuandoNovoHorarioComecarNoFimDoExistente() {
         UUID agendamentoId = UUID.randomUUID();
         UUID usuarioId = usuarioIdValido();
         UUID pacienteId = pacienteIdValido();
         UUID tipoAtendimentoId = tipoAtendimentoIdValido();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
-        LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 30);
+        LocalDateTime inicioNovoAgendamento = inicioAgendamentoExistente.plusMinutes(60);
 
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = new AgendamentoRequest(
-                inicioNovoAgendamento,
-                60,
-                pacienteId,
-                tipoAtendimentoId,
-                usuarioId
-        );
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
 
-        Agendamento agendamentoMapeado = Agendamento.builder()
-                .dataHoraInicio(inicioNovoAgendamento)
-                .duracaoEmMinutos(60)
-                .build();
+        Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicioNovoAgendamento);
 
-        Agendamento agendamentoExistenteMapeado = Agendamento.builder()
-                .id(UUID.randomUUID())
-                .dataHoraInicio(inicioAgendamentoExistente)
-                .duracaoEmMinutos(60)
-                .ativo(true)
-                .build();
+        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicioAgendamentoExistente, true);
 
-        AgendamentoResponse responseEsperado = new AgendamentoResponse(
-                agendamentoId,
-                StatusPagamento.PENDENTE,
-                inicioNovoAgendamento,
-                inicioNovoAgendamento.plusMinutes(60),
-                null,
-                StatusAtendimento.CRIADO,
-                null,
-                null,
-                tipoAtendimento.getValorPadraoTipoAtendimento(),
-                true
-        );
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicioNovoAgendamento, tipoAtendimento);
 
         when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
         when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
@@ -379,16 +348,7 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        Agendamento agendamentoSalvo = agendamentoCaptor.getValue();
-        assertEquals(inicioNovoAgendamento, agendamentoSalvo.getDataHoraInicio());
-        assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
-        assertEquals(inicioNovoAgendamento.plusMinutes(60), agendamentoSalvo.getDataHoraFim());
-        assertSame(usuario, agendamentoSalvo.getUsuario());
-        assertSame(paciente, agendamentoSalvo.getPaciente());
-        assertSame(tipoAtendimento, agendamentoSalvo.getTipoAtendimento());
-        assertEquals(StatusAtendimento.CRIADO, agendamentoSalvo.getStatusAtendimento());
-        assertEquals(StatusPagamento.PENDENTE, agendamentoSalvo.getStatusPagamento());
-        assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), agendamentoSalvo.getValorAtendimento());
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
