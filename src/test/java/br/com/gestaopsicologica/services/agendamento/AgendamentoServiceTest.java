@@ -359,4 +359,96 @@ class AgendamentoServiceTest {
         assertNotNull(response);
         assertEquals(responseEsperado, response);
     }
+
+    @Test
+    void naoDeveCriarAgendamentoCasoNaoEncontrePaciente() {
+        UUID usuarioId = usuarioIdValido();
+        UUID pacienteId = pacienteIdValido();
+        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
+        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
+
+        Usuario usuario = usuarioValido(usuarioId);
+
+        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, inicio);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.empty());
+
+        String mensagemEsperada = "Paciente não encontrado";
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.criarAgendamento(novoAgendamento)
+        );
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+
+        verifyNoInteractions(tipoAtendimentoRepository);
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+        verify(evolucaoPsicologicaService, never()).criar(any());
+    }
+
+    @Test
+    void naoDeveCriarAgendamentoCasoNaoEncontreUsuario() {
+        UUID usuarioId = usuarioIdValido();
+        UUID pacienteId = pacienteIdValido();
+        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
+        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
+
+        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, inicio);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+
+        String mensagemEsperada = "Usuário não encontrado";
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.criarAgendamento(novoAgendamento)
+        );
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+
+        verifyNoInteractions(tipoAtendimentoRepository);
+        verifyNoInteractions(pacienteRepository);
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+        verify(evolucaoPsicologicaService, never()).criar(any());
+    }
+
+    @Test
+    void naoDeveCriarAgendamentoCasoNaoEncontreTipoAtendimento() {
+        UUID usuarioId = usuarioIdValido();
+        UUID pacienteId = pacienteIdValido();
+        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
+        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+
+        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, inicio);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
+        when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.empty());
+
+        String mensagemEsperada = "Tipo de atendimento não encontrado";
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.criarAgendamento(novoAgendamento)
+        );
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+        verify(evolucaoPsicologicaService, never()).criar(any());
+    }
 }
