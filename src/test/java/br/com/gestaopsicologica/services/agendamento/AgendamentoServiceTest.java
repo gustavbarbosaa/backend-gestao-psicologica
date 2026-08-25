@@ -16,6 +16,7 @@ import br.com.gestaopsicologica.repository.UsuarioRepository;
 import br.com.gestaopsicologica.services.EvolucaoPsicologicaService;
 import br.com.gestaopsicologica.services.UsuarioAutenticadoService;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +38,11 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AgendamentoServiceTest {
+    private UUID usuarioId;
+    private UUID pacienteId;
+    private UUID tipoAtendimentoId;
+    private static final LocalDateTime INICIO_PADRAO =
+            LocalDateTime.of(2030, 8, 20, 20, 30);
 
     @Mock
     private AgendamentoRepository agendamentoRepository;
@@ -151,13 +157,13 @@ class AgendamentoServiceTest {
     }
 
     private void assertAgendamentoCriadoCorretamente(
-            ArgumentCaptor<Agendamento> agendamentoCaptor,
+            Agendamento agendamentoSalvo,
             LocalDateTime inicio,
             Usuario usuario,
             Paciente paciente,
             TipoAtendimento tipoAtendimento
     ) {
-        Agendamento agendamentoSalvo = agendamentoCaptor.getValue();
+
         assertEquals(inicio, agendamentoSalvo.getDataHoraInicio());
         assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
         assertEquals(inicio.plusMinutes(60), agendamentoSalvo.getDataHoraFim());
@@ -182,26 +188,29 @@ class AgendamentoServiceTest {
         )).thenReturn(Collections.emptyList());
     }
 
+    @BeforeEach
+    void configurarDadosBase() {
+        usuarioId = usuarioIdValido();
+        pacienteId = pacienteIdValido();
+        tipoAtendimentoId = tipoAtendimentoIdValido();
+    }
+
     @Test
     void deveSalvarAgendamentoQuandoDadosForemValidos() {
         UUID agendamentoId = UUID.randomUUID();
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
-        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
 
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
 
-        Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicio);
+        Agendamento agendamentoMapeado = criarAgendamentoMapeado(INICIO_PADRAO);
 
-        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicio, tipoAtendimento);
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, INICIO_PADRAO, tipoAtendimento);
 
         configurarProfissionalAutenticado(usuarioId);
-        configurarAgendaSemConflitos(usuarioId, inicio);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
         when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.of(tipoAtendimento));
@@ -219,7 +228,7 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicio, usuario, paciente, tipoAtendimento);
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), INICIO_PADRAO, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
@@ -227,15 +236,11 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveSalvarAgendamentoEmCasoDeConflitoDeHorario() {
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
-        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 0);
 
         AgendamentoRequest novoAgendamentoConflito = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
 
-        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicio, true);
+        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(INICIO_PADRAO, true);
 
         configurarProfissionalAutenticado(usuarioId);
         when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
@@ -246,7 +251,7 @@ class AgendamentoServiceTest {
 
         String mensagemEsperada =
                 "Conflito de horário! Já existe agendamento das " +
-                        inicio.toLocalTime() + " às " + inicio.plusMinutes(60).toLocalTime();
+                        INICIO_PADRAO.toLocalTime() + " às " + INICIO_PADRAO.plusMinutes(60).toLocalTime();
 
 
        IllegalArgumentException exception = assertThrows(
@@ -263,9 +268,6 @@ class AgendamentoServiceTest {
     @Test
     void deveCriarAgendamentoQuandoConflitoForComAgendamentoInativo() {
         UUID agendamentoId = UUID.randomUUID();
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 0);
 
@@ -304,7 +306,7 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
@@ -313,9 +315,6 @@ class AgendamentoServiceTest {
     @Test
     void deveCriarAgendamentoQuandoNovoHorarioComecarNoFimDoExistente() {
         UUID agendamentoId = UUID.randomUUID();
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
         LocalDateTime inicioNovoAgendamento = inicioAgendamentoExistente.plusMinutes(60);
 
@@ -354,7 +353,7 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository).save(agendamentoCaptor.capture());
         verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
 
-        assertAgendamentoCriadoCorretamente(agendamentoCaptor, inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
 
         assertNotNull(response);
         assertEquals(responseEsperado, response);
@@ -362,17 +361,12 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveCriarAgendamentoCasoNaoEncontrePaciente() {
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
-        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
-
         Usuario usuario = usuarioValido(usuarioId);
 
-        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
 
         configurarProfissionalAutenticado(usuarioId);
-        configurarAgendaSemConflitos(usuarioId, inicio);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.empty());
 
@@ -393,15 +387,10 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveCriarAgendamentoCasoNaoEncontreUsuario() {
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
-        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
-
-        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
 
         configurarProfissionalAutenticado(usuarioId);
-        configurarAgendaSemConflitos(usuarioId, inicio);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
         String mensagemEsperada = "Usuário não encontrado";
@@ -422,18 +411,13 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveCriarAgendamentoCasoNaoEncontreTipoAtendimento() {
-        UUID usuarioId = usuarioIdValido();
-        UUID pacienteId = pacienteIdValido();
-        UUID tipoAtendimentoId = tipoAtendimentoIdValido();
-        LocalDateTime inicio = LocalDateTime.of(2030,8,20, 20, 30);
-
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
 
-        AgendamentoRequest novoAgendamento = criarRequestValido(inicio, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
 
         configurarProfissionalAutenticado(usuarioId);
-        configurarAgendaSemConflitos(usuarioId, inicio);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
         when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.empty());
