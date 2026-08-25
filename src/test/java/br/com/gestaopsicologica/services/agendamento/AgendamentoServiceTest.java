@@ -15,6 +15,7 @@ import br.com.gestaopsicologica.repository.TipoAtendimentoRepository;
 import br.com.gestaopsicologica.repository.UsuarioRepository;
 import br.com.gestaopsicologica.services.EvolucaoPsicologicaService;
 import br.com.gestaopsicologica.services.UsuarioAutenticadoService;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -168,6 +169,19 @@ class AgendamentoServiceTest {
         assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), agendamentoSalvo.getValorAtendimento());
     }
 
+    private void configurarProfissionalAutenticado(UUID usuarioId) {
+        when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
+        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
+    }
+
+    private void configurarAgendaSemConflitos(UUID usuarioId, LocalDateTime inicio) {
+        when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
+                usuarioId,
+                inicio.toLocalDate().atStartOfDay(),
+                inicio.toLocalDate().atTime(LocalTime.MAX)
+        )).thenReturn(Collections.emptyList());
+    }
+
     @Test
     void deveSalvarAgendamentoQuandoDadosForemValidos() {
         UUID agendamentoId = UUID.randomUUID();
@@ -186,13 +200,8 @@ class AgendamentoServiceTest {
 
         AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicio, tipoAtendimento);
 
-        when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
-        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
-        when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
-                usuarioId,
-                inicio.toLocalDate().atStartOfDay(),
-                inicio.toLocalDate().atTime(LocalTime.MAX))
-        ).thenReturn(Collections.emptyList());
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, inicio);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
         when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
         when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.of(tipoAtendimento));
@@ -228,8 +237,7 @@ class AgendamentoServiceTest {
 
         Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicio, true);
 
-        when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
-        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
+        configurarProfissionalAutenticado(usuarioId);
         when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
                 usuarioId,
                 inicioNovoAgendamento.toLocalDate().atStartOfDay(),
@@ -273,8 +281,7 @@ class AgendamentoServiceTest {
 
         Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicioAgendamentoExistente, false);
 
-        when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
-        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
+        configurarProfissionalAutenticado(usuarioId);
         when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
                 usuarioId,
                 inicioNovoAgendamento.toLocalDate().atStartOfDay(),
@@ -324,8 +331,7 @@ class AgendamentoServiceTest {
 
         AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicioNovoAgendamento, tipoAtendimento);
 
-        when(usuarioAutenticadoService.isAdmin()).thenReturn(false);
-        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
+        configurarProfissionalAutenticado(usuarioId);
         when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
                 usuarioId,
                 inicioNovoAgendamento.toLocalDate().atStartOfDay(),
