@@ -323,7 +323,54 @@ class AgendamentoServiceTest {
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicioNovoAgendamento);
+
+        Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(inicioAgendamentoExistente, true);
+
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicioNovoAgendamento, tipoAtendimento);
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
+                usuarioId,
+                inicioNovoAgendamento.toLocalDate().atStartOfDay(),
+                inicioNovoAgendamento.toLocalDate().atTime(LocalTime.MAX)
+        )).thenReturn(List.of(agendamentoExistenteMapeado));
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
+        when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.of(tipoAtendimento));
+        when(agendamentoMapper.toEntity(request)).thenReturn(agendamentoMapeado);
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> {
+            Agendamento agendamento = invocation.getArgument(0);
+            agendamento.setId(agendamentoId);
+            return agendamento;
+        });
+        when(agendamentoMapper.toResponse(any(Agendamento.class))).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.criarAgendamento(request);
+
+        ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository).save(agendamentoCaptor.capture());
+        verify(evolucaoPsicologicaService).criar(agendamentoCaptor.getValue());
+
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
+
+        assertNotNull(response);
+        assertEquals(responseEsperado, response);
+    }
+
+    @Test
+    void deveCriarAgendamentoQuandoNovoHorarioTerminarNoInicioDoExistente() {
+        UUID agendamentoId = UUID.randomUUID();
+        LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
+        LocalDateTime inicioNovoAgendamento = inicioAgendamentoExistente.minusMinutes(60);
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicioNovoAgendamento);
 
@@ -435,5 +482,67 @@ class AgendamentoServiceTest {
         verifyNoInteractions(agendamentoMapper);
         verify(agendamentoRepository, never()).save(any());
         verify(evolucaoPsicologicaService, never()).criar(any());
+    }
+
+    @Test
+    void deveCriarAgendamentoPreservandoStatusDePagamento() {
+        UUID agendamentoId = UUID.randomUUID();
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, StatusPagamento.CONFIRMADO);
+
+        Agendamento agendamentoMapeado = Agendamento.builder()
+                .dataHoraInicio(INICIO_PADRAO)
+                .statusPagamento(StatusPagamento.CONFIRMADO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        AgendamentoResponse responseEsperado = new AgendamentoResponse(
+                agendamentoId,
+                StatusPagamento.CONFIRMADO,
+                INICIO_PADRAO,
+                INICIO_PADRAO.plusMinutes(60),
+                null,
+                StatusAtendimento.CRIADO,
+                null,
+                null,
+                tipoAtendimento.getValorPadraoTipoAtendimento(),
+                true
+        );
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(pacienteRepository.findByIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(Optional.of(paciente));
+        when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.of(tipoAtendimento));
+        when(agendamentoMapper.toEntity(request)).thenReturn(agendamentoMapeado);
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> {
+            Agendamento agendendamento = invocation.getArgument(0);
+            agendendamento.setId(agendamentoId);
+            return agendendamento;
+        });
+        when(agendamentoMapper.toResponse(agendamentoMapeado)).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.criarAgendamento(request);
+
+        ArgumentCaptor<Agendamento> argumentCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository).save(argumentCaptor.capture());
+        verify(evolucaoPsicologicaService).criar(argumentCaptor.getValue());
+
+        assertEquals(INICIO_PADRAO, argumentCaptor.getValue().getDataHoraInicio());
+        assertEquals(60, argumentCaptor.getValue().getDuracaoEmMinutos());
+        assertEquals(INICIO_PADRAO.plusMinutes(60), argumentCaptor.getValue().getDataHoraFim());
+        assertSame(usuario, argumentCaptor.getValue().getUsuario());
+        assertSame(paciente, argumentCaptor.getValue().getPaciente());
+        assertSame(tipoAtendimento, argumentCaptor.getValue().getTipoAtendimento());
+        assertEquals(StatusAtendimento.CRIADO, argumentCaptor.getValue().getStatusAtendimento());
+        assertEquals(StatusPagamento.CONFIRMADO, argumentCaptor.getValue().getStatusPagamento());
+        assertEquals(tipoAtendimento.getValorPadraoTipoAtendimento(), argumentCaptor.getValue().getValorAtendimento());
+
+        assertNotNull(response);
+        assertEquals(responseEsperado, response);
     }
 }
