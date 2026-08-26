@@ -111,14 +111,16 @@ class AgendamentoServiceTest {
             LocalDateTime inicio,
             UUID pacienteId,
             UUID tipoAtendimentoId,
-            UUID usuarioId
+            UUID usuarioId,
+            StatusPagamento statusPagamento
     ) {
         return new AgendamentoRequest(
                 inicio,
                 60,
                 pacienteId,
                 tipoAtendimentoId,
-                usuarioId
+                usuarioId,
+                statusPagamento
         );
     }
 
@@ -163,7 +165,6 @@ class AgendamentoServiceTest {
             Paciente paciente,
             TipoAtendimento tipoAtendimento
     ) {
-
         assertEquals(inicio, agendamentoSalvo.getDataHoraInicio());
         assertEquals(60, agendamentoSalvo.getDuracaoEmMinutos());
         assertEquals(inicio.plusMinutes(60), agendamentoSalvo.getDataHoraFim());
@@ -203,7 +204,7 @@ class AgendamentoServiceTest {
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         Agendamento agendamentoMapeado = criarAgendamentoMapeado(INICIO_PADRAO);
 
@@ -238,7 +239,7 @@ class AgendamentoServiceTest {
     void naoDeveSalvarAgendamentoEmCasoDeConflitoDeHorario() {
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 0);
 
-        AgendamentoRequest novoAgendamentoConflito = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamentoConflito = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         Agendamento agendamentoExistenteMapeado = criarAgendamentoExistente(INICIO_PADRAO, true);
 
@@ -275,7 +276,7 @@ class AgendamentoServiceTest {
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
 
-        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         Agendamento agendamentoMapeado = criarAgendamentoMapeado(inicioNovoAgendamento);
 
@@ -363,7 +364,7 @@ class AgendamentoServiceTest {
     void naoDeveCriarAgendamentoCasoNaoEncontrePaciente() {
         Usuario usuario = usuarioValido(usuarioId);
 
-        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         configurarProfissionalAutenticado(usuarioId);
         configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
@@ -387,7 +388,7 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveCriarAgendamentoCasoNaoEncontreUsuario() {
-        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         configurarProfissionalAutenticado(usuarioId);
         configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
@@ -414,7 +415,7 @@ class AgendamentoServiceTest {
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
 
-        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId);
+        AgendamentoRequest novoAgendamento = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         configurarProfissionalAutenticado(usuarioId);
         configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
