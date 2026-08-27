@@ -545,4 +545,211 @@ class AgendamentoServiceTest {
         assertNotNull(response);
         assertEquals(responseEsperado, response);
     }
+
+    @Test
+    void deveEditarDuracaoDeAgendamentoCorretamente() {
+        UUID agendamentoId = UUID.randomUUID();
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        Agendamento agendamentoMapeado = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimento)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(120)
+                .build();
+
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, INICIO_PADRAO, tipoAtendimento);
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, INICIO_PADRAO);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamentoMapeado));
+        when(agendamentoRepository.save(agendamentoMapeado)).thenReturn(agendamentoMapeado);
+        when(agendamentoMapper.toResponse(agendamentoMapeado)).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.editarAgendamento(agendamentoId, request);
+
+        ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository).save(agendamentoCaptor.capture());
+
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), INICIO_PADRAO, usuario, paciente, tipoAtendimento);
+
+        assertNotNull(response);
+        assertEquals(responseEsperado, response);
+    }
+
+    @Test
+    void naoDeveEditarCasoNaoEncontreAgendamento() {
+        UUID agendamentoId = UUID.randomUUID();
+
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.editarAgendamento(agendamentoId, request)
+        );
+
+        String mensagemEsperada = "Agendamento não encontrado.";
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void deveEditarTipoAtendimentoCorretamente() {
+        UUID agendamentoId = UUID.randomUUID();
+        UUID tipoAtendimentoIdPersistido = UUID.randomUUID();
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+        TipoAtendimento tipoAtendimentoPersistido = TipoAtendimento.builder()
+                    .id(tipoAtendimentoIdPersistido)
+                    .usuario(usuario)
+                    .valorPadraoTipoAtendimento(BigDecimal.valueOf(100))
+                    .ativo(true)
+                    .build();
+
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, INICIO_PADRAO, tipoAtendimento);
+
+        Agendamento agendamentoExistente = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimentoPersistido)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimentoPersistido.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamentoExistente));
+        when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.of(tipoAtendimento));
+        when(agendamentoRepository.save(agendamentoExistente)).thenReturn(agendamentoExistente);
+        when(agendamentoMapper.toResponse(agendamentoExistente)).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.editarAgendamento(agendamentoId, request);
+
+        ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository).save(agendamentoCaptor.capture());
+
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), INICIO_PADRAO, usuario, paciente, tipoAtendimento);
+
+        assertNotNull(response);
+        assertEquals(responseEsperado, response);
+    }
+
+    @Test
+    void naoDeveEditarCasoTipoAtendimentoNaoExista() {
+        UUID agendamentoId = UUID.randomUUID();
+        UUID tipoAtendimentoIdPersistido = UUID.randomUUID();
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+
+        TipoAtendimento tipoAtendimentoPersistido = TipoAtendimento.builder()
+                .id(tipoAtendimentoIdPersistido)
+                .usuario(usuario)
+                .valorPadraoTipoAtendimento(BigDecimal.valueOf(100))
+                .ativo(true)
+                .build();
+
+        Agendamento agendamentoExistente = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimentoPersistido)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimentoPersistido.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamentoExistente));
+        when(tipoAtendimentoRepository.findByIdAndUsuarioId(tipoAtendimentoId, usuarioId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.editarAgendamento(agendamentoId, request)
+        );
+
+        String mensagemEsperada = "Tipo de atendimento não encontrado";
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void deveIgnorarProprioAgendamentoAoValidarConflitoNaEdicao() {
+        UUID agendamentoId = UUID.randomUUID();
+        LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 20, 35);
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        AgendamentoRequest request = criarRequestValido(inicioNovoAgendamento, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        Agendamento agendamentoExistente = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimento)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        AgendamentoResponse responseEsperado = criarResponseEsperado(agendamentoId, inicioNovoAgendamento, tipoAtendimento);
+
+        configurarProfissionalAutenticado(usuarioId);
+        configurarAgendaSemConflitos(usuarioId, inicioNovoAgendamento);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamentoExistente));
+        when(agendamentoRepository.save(agendamentoExistente)).thenReturn(agendamentoExistente);
+        when(agendamentoMapper.toResponse(agendamentoExistente)).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.editarAgendamento(agendamentoId, request);
+
+        ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository)
+                .findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
+                        usuarioId,
+                        inicioNovoAgendamento.toLocalDate().atStartOfDay(),
+                        inicioNovoAgendamento.toLocalDate().atTime(LocalTime.MAX)
+                );
+        verify(agendamentoRepository).save(agendamentoCaptor.capture());
+
+        assertAgendamentoCriadoCorretamente(agendamentoCaptor.getValue(), inicioNovoAgendamento, usuario, paciente, tipoAtendimento);
+
+        assertNotNull(response);
+        assertEquals(responseEsperado, response);
+    }
 }
