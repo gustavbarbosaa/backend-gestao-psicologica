@@ -752,4 +752,63 @@ class AgendamentoServiceTest {
         assertNotNull(response);
         assertEquals(responseEsperado, response);
     }
+
+    @Test
+    void naoDeveEditarAgendamentoCasoHajaConflitoComAgendamentoAtivoExistente() {
+        UUID agendamentoExistenteId = UUID.randomUUID();
+        UUID agendamentoId = UUID.randomUUID() ;
+        LocalDateTime inicioAgendamentoParaEdicao = LocalDateTime.of(2030, 8, 20, 20, 35);
+
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        Agendamento agendamentoExistente = Agendamento.builder()
+                .id(agendamentoExistenteId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimento)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        AgendamentoRequest request = criarRequestValido(inicioAgendamentoParaEdicao, pacienteId, tipoAtendimentoId, usuarioId, null);
+
+        Agendamento agendamentoParaEdicao = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimento)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO.plusMinutes(60))
+                .duracaoEmMinutos(60)
+                .build();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findAgendamentosByUsuarioIdAndDataHoraInicioBetween(
+                usuarioId,
+                INICIO_PADRAO.toLocalDate().atStartOfDay(),
+                INICIO_PADRAO.toLocalDate().atTime(LocalTime.MAX)
+        )).thenReturn(List.of(agendamentoExistente, agendamentoParaEdicao));
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamentoParaEdicao));
+
+        String mensagemEsperada = "Conflito de horário! Já existe agendamento das "
+                + agendamentoExistente.getDataHoraInicio().toLocalTime() + " às " + agendamentoExistente.getDataHoraFim().toLocalTime();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> agendamentoService.editarAgendamento(agendamentoId, request)
+        );
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+        verifyNoInteractions(agendamentoMapper);
+        verify(agendamentoRepository, never()).save(any());
+    }
 }
