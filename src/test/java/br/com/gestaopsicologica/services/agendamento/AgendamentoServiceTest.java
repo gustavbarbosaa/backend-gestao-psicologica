@@ -798,4 +798,96 @@ class AgendamentoServiceTest {
         verifyNoInteractions(agendamentoMapper);
         verify(agendamentoRepository, never()).save(any());
     }
+
+    @Test
+    void deveExcluirAgendamentoDoUsuarioCorretamenteCasoExista() {
+        Usuario usuario = usuarioValido(usuarioId);
+        Agendamento agendamento = Agendamento.builder()
+                        .usuario(usuario)
+                        .build();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamento));
+
+        agendamentoService.apagarAgendamento(agendamentoId);
+
+        verify(agendamentoRepository).deleteById(agendamentoId);
+    }
+
+    @Test
+    void naoDeveExcluirCasoNaoEncontreAgendamento() {
+        configurarProfissionalAutenticado(usuarioId);
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.apagarAgendamento(agendamentoId)
+        );
+
+        String mensagemEsperada = "Agendamento com ID " + agendamentoId + " não encontrado para exclusão.";
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+        verify(agendamentoRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deveInativarAgendamentoCorretamente() {
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        Agendamento agendamento = Agendamento.builder()
+                .id(agendamentoId)
+                .usuario(usuario)
+                .paciente(paciente)
+                .tipoAtendimento(tipoAtendimento)
+                .statusAtendimento(StatusAtendimento.CRIADO)
+                .statusPagamento(StatusPagamento.PENDENTE)
+                .ativo(true)
+                .valorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento())
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .build();
+
+        AgendamentoResponse responseEsperado = new AgendamentoResponse(
+                agendamentoId,
+                StatusPagamento.PENDENTE,
+                INICIO_PADRAO,
+                INICIO_PADRAO.plusMinutes(60),
+                null,
+                StatusAtendimento.CRIADO,
+                null,
+                null,
+                tipoAtendimento.getValorPadraoTipoAtendimento(),
+                false
+        );
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findByIdAndUsuarioId(agendamentoId, usuarioId)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.save(agendamento)).thenReturn(agendamento);
+        when(agendamentoMapper.toResponse(agendamento)).thenReturn(responseEsperado);
+
+        AgendamentoResponse response = agendamentoService.inativar(agendamentoId);
+
+        ArgumentCaptor<Agendamento> captor = ArgumentCaptor.forClass(Agendamento.class);
+
+        verify(agendamentoRepository).save(captor.capture());
+        assertEquals(responseEsperado, response);
+        assertEquals(Boolean.FALSE, captor.getValue().getAtivo());
+    }
+
+    @Test
+    void naoDeveInativarCasoNaoEncontreAgendamento() {
+        configurarProfissionalAutenticado(usuarioId);
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> agendamentoService.inativar(agendamentoId)
+        );
+
+        String mensagemEsperada = "Agendamento não encontrado.";
+
+        assertEquals(mensagemEsperada, exception.getMessage());
+        verify(agendamentoRepository, never()).save(any());
+        verifyNoInteractions(agendamentoMapper);
+    }
 }
