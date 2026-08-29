@@ -41,6 +41,7 @@ class AgendamentoServiceTest {
     private UUID usuarioId;
     private UUID pacienteId;
     private UUID tipoAtendimentoId;
+    private UUID agendamentoId;
     private static final LocalDateTime INICIO_PADRAO =
             LocalDateTime.of(2030, 8, 20, 20, 30);
 
@@ -194,12 +195,11 @@ class AgendamentoServiceTest {
         usuarioId = usuarioIdValido();
         pacienteId = pacienteIdValido();
         tipoAtendimentoId = tipoAtendimentoIdValido();
+        agendamentoId = UUID.randomUUID();
     }
 
     @Test
     void deveSalvarAgendamentoQuandoDadosForemValidos() {
-        UUID agendamentoId = UUID.randomUUID();
-
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
@@ -268,7 +268,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveCriarAgendamentoQuandoConflitoForComAgendamentoInativo() {
-        UUID agendamentoId = UUID.randomUUID();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 21, 0);
 
@@ -315,7 +314,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveCriarAgendamentoQuandoNovoHorarioComecarNoFimDoExistente() {
-        UUID agendamentoId = UUID.randomUUID();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
         LocalDateTime inicioNovoAgendamento = inicioAgendamentoExistente.plusMinutes(60);
 
@@ -362,7 +360,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveCriarAgendamentoQuandoNovoHorarioTerminarNoInicioDoExistente() {
-        UUID agendamentoId = UUID.randomUUID();
         LocalDateTime inicioAgendamentoExistente = LocalDateTime.of(2030, 8, 20, 20, 30);
         LocalDateTime inicioNovoAgendamento = inicioAgendamentoExistente.minusMinutes(60);
 
@@ -486,8 +483,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveCriarAgendamentoPreservandoStatusDePagamento() {
-        UUID agendamentoId = UUID.randomUUID();
-
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
@@ -548,8 +543,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveEditarDuracaoDeAgendamentoCorretamente() {
-        UUID agendamentoId = UUID.randomUUID();
-
         Usuario usuario = usuarioValido(usuarioId);
         Paciente paciente = pacienteValido(pacienteId, usuario);
         TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
@@ -590,8 +583,6 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveEditarCasoNaoEncontreAgendamento() {
-        UUID agendamentoId = UUID.randomUUID();
-
         AgendamentoRequest request = criarRequestValido(INICIO_PADRAO, pacienteId, tipoAtendimentoId, usuarioId, null);
 
         configurarProfissionalAutenticado(usuarioId);
@@ -611,7 +602,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveEditarTipoAtendimentoCorretamente() {
-        UUID agendamentoId = UUID.randomUUID();
         UUID tipoAtendimentoIdPersistido = UUID.randomUUID();
 
         Usuario usuario = usuarioValido(usuarioId);
@@ -660,7 +650,6 @@ class AgendamentoServiceTest {
 
     @Test
     void naoDeveEditarCasoTipoAtendimentoNaoExista() {
-        UUID agendamentoId = UUID.randomUUID();
         UUID tipoAtendimentoIdPersistido = UUID.randomUUID();
 
         Usuario usuario = usuarioValido(usuarioId);
@@ -706,7 +695,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveIgnorarProprioAgendamentoAoValidarConflitoNaEdicao() {
-        UUID agendamentoId = UUID.randomUUID();
         LocalDateTime inicioNovoAgendamento = LocalDateTime.of(2030, 8, 20, 20, 35);
 
         Usuario usuario = usuarioValido(usuarioId);
@@ -756,7 +744,6 @@ class AgendamentoServiceTest {
     @Test
     void naoDeveEditarAgendamentoCasoHajaConflitoComAgendamentoAtivoExistente() {
         UUID agendamentoExistenteId = UUID.randomUUID();
-        UUID agendamentoId = UUID.randomUUID() ;
         LocalDateTime inicioAgendamentoParaEdicao = LocalDateTime.of(2030, 8, 20, 20, 35);
 
         Usuario usuario = usuarioValido(usuarioId);
