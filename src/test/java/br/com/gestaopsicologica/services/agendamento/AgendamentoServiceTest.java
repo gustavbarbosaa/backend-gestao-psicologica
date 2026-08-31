@@ -27,10 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -145,6 +142,15 @@ class AgendamentoServiceTest {
     }
 
     private AgendamentoResponse criarResponseEsperado(UUID agendamentoId, LocalDateTime inicio, TipoAtendimento tipoAtendimento) {
+        return criarResponseEsperado(agendamentoId, inicio, tipoAtendimento, true);
+    }
+
+    private AgendamentoResponse criarResponseEsperado(
+            UUID agendamentoId,
+            LocalDateTime inicio,
+            TipoAtendimento tipoAtendimento,
+            boolean ativo
+    ) {
         return new AgendamentoResponse(
                 agendamentoId,
                 StatusPagamento.PENDENTE,
@@ -155,7 +161,64 @@ class AgendamentoServiceTest {
                 null,
                 null,
                 tipoAtendimento.getValorPadraoTipoAtendimento(),
-                true
+                ativo
+        );
+    }
+
+    private record CenarioListagem(
+            List<Agendamento> agendamentos,
+            List<AgendamentoResponse> responses
+    ) {}
+
+    private CenarioListagem criarCenarioListagemAtivos() {
+        return criarCenarioListagem(true);
+    }
+
+    private CenarioListagem criarCenarioListagemIncluindoInativos() {
+        return criarCenarioListagem(false);
+    }
+
+    private CenarioListagem criarCenarioListagem(boolean segundoAgendamentoAtivo) {
+        Usuario usuario = usuarioValido(usuarioId);
+        Paciente paciente = pacienteValido(pacienteId, usuario);
+        TipoAtendimento tipoAtendimento = tipoAtendimentoValido(tipoAtendimentoId, usuario);
+
+        Agendamento primeiroAgendamento = Agendamento.builder()
+                .id(UUID.randomUUID())
+                .usuario(usuario)
+                .paciente(paciente)
+                .dataHoraInicio(INICIO_PADRAO)
+                .duracaoEmMinutos(60)
+                .ativo(true)
+                .build();
+
+        Agendamento segundoAgendamento = Agendamento.builder()
+                .id(UUID.randomUUID())
+                .usuario(usuario)
+                .paciente(paciente)
+                .dataHoraInicio(INICIO_PADRAO.plusMinutes(60))
+                .duracaoEmMinutos(60)
+                .ativo(segundoAgendamentoAtivo)
+                .build();
+
+        AgendamentoResponse primeiroResponse =
+                criarResponseEsperado(
+                        primeiroAgendamento.getId(),
+                        primeiroAgendamento.getDataHoraInicio(),
+                        tipoAtendimento
+                );
+
+        AgendamentoResponse segundoResponse =
+                criarResponseEsperado(
+                        segundoAgendamento.getId(),
+                        segundoAgendamento.getDataHoraInicio(),
+                        tipoAtendimento,
+                        segundoAgendamentoAtivo
+                );
+
+        return new CenarioListagem(
+                List.of(primeiroAgendamento, segundoAgendamento),
+                List.of(primeiroResponse, segundoResponse)
         );
     }
 
@@ -889,5 +952,69 @@ class AgendamentoServiceTest {
         assertEquals(mensagemEsperada, exception.getMessage());
         verify(agendamentoRepository, never()).save(any());
         verifyNoInteractions(agendamentoMapper);
+    }
+
+    @Test
+    void deveListarTodosAgendamentosAtivos() {
+        CenarioListagem cenario = criarCenarioListagemAtivos();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findAgendamentosByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(cenario.agendamentos());
+        when(agendamentoMapper.toResponseList(cenario.agendamentos())).thenReturn(cenario.responses());
+
+        List<AgendamentoResponse> response = agendamentoService.listarTodosAgendamentos();
+
+        assertEquals(cenario.responses(), response);
+
+        verify(agendamentoRepository).findAgendamentosByUsuarioIdAndAtivoTrue(usuarioId);
+        verify(agendamentoMapper).toResponseList(cenario.agendamentos());
+    }
+
+    @Test
+    void deveListarTodosAgendamentosIncluindoInativos() {
+        CenarioListagem cenario = criarCenarioListagemIncluindoInativos();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findAgendamentosByUsuarioId(usuarioId)).thenReturn(cenario.agendamentos());
+        when(agendamentoMapper.toResponseList(cenario.agendamentos())).thenReturn(cenario.responses());
+
+        List<AgendamentoResponse> response = agendamentoService.listarTodosAgendamentosIncluindoInativos();
+
+        assertEquals(cenario.responses(), response);
+
+        verify(agendamentoRepository).findAgendamentosByUsuarioId(usuarioId);
+        verify(agendamentoMapper).toResponseList(cenario.agendamentos());
+    }
+
+    @Test
+    void deveListarAgendamentosPorUsuario() {
+        CenarioListagem cenario = criarCenarioListagemIncluindoInativos();
+
+        when(usuarioAutenticadoService.buscarUsuarioAutenticado()).thenReturn(usuarioId);
+        when(agendamentoRepository.findAgendamentosByUsuarioId(usuarioId)).thenReturn(cenario.agendamentos());
+        when(agendamentoMapper.toResponseList(cenario.agendamentos())).thenReturn(cenario.responses());
+
+        List<AgendamentoResponse> response = agendamentoService.listarAgendamentosPorUsuario();
+
+        assertEquals(cenario.responses(), response);
+
+        verify(agendamentoRepository).findAgendamentosByUsuarioId(usuarioId);
+        verify(agendamentoMapper).toResponseList(cenario.agendamentos());
+    }
+
+    @Test
+    void deveListarAgendamentosPorPaciente() {
+        CenarioListagem cenario = criarCenarioListagemIncluindoInativos();
+
+        configurarProfissionalAutenticado(usuarioId);
+        when(agendamentoRepository.findAgendamentosByPacienteIdAndUsuarioId(pacienteId, usuarioId)).thenReturn(cenario.agendamentos());
+        when(agendamentoMapper.toResponseList(cenario.agendamentos())).thenReturn(cenario.responses());
+
+        List<AgendamentoResponse> response = agendamentoService.listarAgendamentosPorPaciente(pacienteId);
+
+        assertEquals(cenario.responses(), response);
+
+        verify(agendamentoRepository).findAgendamentosByPacienteIdAndUsuarioId(pacienteId, usuarioId);
+        verify(agendamentoMapper).toResponseList(cenario.agendamentos());
     }
 }
