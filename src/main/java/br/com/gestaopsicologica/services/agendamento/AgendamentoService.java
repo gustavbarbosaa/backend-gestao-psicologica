@@ -67,16 +67,7 @@ public class AgendamentoService {
 
         validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioId);
 
-        Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
-        agendamento.setUsuario(usuario);
-        agendamento.setPaciente(paciente);
-        agendamento.setStatusAtendimento(StatusAtendimento.CRIADO);
-        agendamento.setTipoAtendimento(tipoAtendimento);
-        agendamento.setValorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento());
-
-        if (agendamento.getStatusPagamento() == null) {
-            agendamento.setStatusPagamento(StatusPagamento.PENDENTE);
-        }
+        Agendamento agendamento = preenchimentoAgendamento(agendamentoRequest, usuario, paciente, tipoAtendimento);
 
         agendamento = agendamentoRepository.save(agendamento);
         evolucaoPsicologicaService.criar(agendamento);
@@ -251,4 +242,25 @@ public class AgendamentoService {
 
         return this.usuarioAutenticadoService.buscarUsuarioAutenticado();
     }
+
+    private Agendamento preenchimentoAgendamento(
+            AgendamentoRequest agendamentoRequest,
+            Usuario usuario,
+            Paciente paciente,
+            TipoAtendimento tipoAtendimento
+    ) {
+        Agendamento agendamento = agendamentoMapper.toEntity(agendamentoRequest);
+        agendamento.setUsuario(usuario);
+        agendamento.setPaciente(paciente);
+        agendamento.setStatusAtendimento(StatusAtendimento.CRIADO);
+        agendamento.setTipoAtendimento(tipoAtendimento);
+        agendamento.setValorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento());
+
+        if (agendamento.getStatusPagamento() == null) {
+            agendamento.setStatusPagamento(StatusPagamento.PENDENTE);
+        }
+
+        return agendamento;
+    }
+
 }
