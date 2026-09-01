@@ -33,8 +33,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-//TODO refatorar service para separar responsabilidades
-// Criando classes especificas apenas para pagamento, tipo de atendimento e verificação de horário
 public class AgendamentoService {
     private final AgendamentoRepository agendamentoRepository;
     private final AgendamentoMapper agendamentoMapper;
@@ -120,26 +118,25 @@ public class AgendamentoService {
         agendamentoRepository.deleteById(agendamentoId);
     }
 
-    //TODO: refatorar método para reduzir a complexidade
     @Transactional
     public AgendamentoResponse editarAgendamento(UUID agendamentoId, AgendamentoRequest agendamentoRequest) {
 
         Agendamento agendamentoExistente = findAgendamentoByScope(agendamentoId)
                 .orElseThrow(() -> new EntityNotFoundException(AGENDAMENTO_NAO_ENCONTRADO));
 
-        boolean mudouHorario = agendamentoRequest.dataHoraInicio() != null && !agendamentoRequest.dataHoraInicio().equals(agendamentoExistente.getDataHoraInicio());
-        boolean mudouDuracao = agendamentoRequest.duracaoEmMinutos() != null && !agendamentoRequest.duracaoEmMinutos().equals(agendamentoExistente.getDuracaoEmMinutos());
-        boolean mudouTipoAgendamento = agendamentoRequest.tipoAtendimentoId() != null && !agendamentoRequest.tipoAtendimentoId().equals(agendamentoExistente.getTipoAtendimento().getId());
+        validaDisponibilidadeDeHorario(
+                agendamentoRequest.usuarioId(),
+                agendamentoRequest.dataHoraInicio(),
+                agendamentoRequest.duracaoEmMinutos(),
+                agendamentoId
+        );
 
-        if (mudouHorario || mudouDuracao) {
-            LocalDateTime novoInicio = mudouHorario ? agendamentoRequest.dataHoraInicio() : agendamentoExistente.getDataHoraInicio();
-            Integer novaDuracao = mudouDuracao ? agendamentoRequest.duracaoEmMinutos() : agendamentoExistente.getDuracaoEmMinutos();
+        agendamentoExistente.setDataHoraInicio(agendamentoRequest.dataHoraInicio());
+        agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
 
-            validaDisponibilidadeDeHorario(agendamentoRequest.usuarioId(), novoInicio, novaDuracao, agendamentoId);
-        }
-
-        if (mudouHorario) agendamentoExistente.setDataHoraInicio(agendamentoRequest.dataHoraInicio());
-        if (mudouDuracao) agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
+        boolean mudouTipoAgendamento =
+                agendamentoRequest.tipoAtendimentoId() != null &&
+                !agendamentoRequest.tipoAtendimentoId().equals(agendamentoExistente.getTipoAtendimento().getId());
 
         if (mudouTipoAgendamento) {
             TipoAtendimento tipoAtendimento = findTipoAtendimentoByScope(agendamentoRequest.tipoAtendimentoId())
