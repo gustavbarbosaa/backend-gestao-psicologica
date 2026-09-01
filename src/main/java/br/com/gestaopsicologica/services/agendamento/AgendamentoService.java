@@ -129,36 +129,22 @@ public class AgendamentoService {
 
         boolean mudouHorario = agendamentoRequest.dataHoraInicio() != null && !agendamentoRequest.dataHoraInicio().equals(agendamentoExistente.getDataHoraInicio());
         boolean mudouDuracao = agendamentoRequest.duracaoEmMinutos() != null && !agendamentoRequest.duracaoEmMinutos().equals(agendamentoExistente.getDuracaoEmMinutos());
-        UUID usuarioIdDestino = resolveTargetUsuarioId(agendamentoRequest.usuarioId());
-        boolean mudouProfissional = !usuarioIdDestino.equals(agendamentoExistente.getUsuario().getId());
         boolean mudouTipoAgendamento = agendamentoRequest.tipoAtendimentoId() != null && !agendamentoRequest.tipoAtendimentoId().equals(agendamentoExistente.getTipoAtendimento().getId());
 
-        if (mudouHorario || mudouDuracao || mudouProfissional) {
+        if (mudouHorario || mudouDuracao) {
             LocalDateTime novoInicio = mudouHorario ? agendamentoRequest.dataHoraInicio() : agendamentoExistente.getDataHoraInicio();
             Integer novaDuracao = mudouDuracao ? agendamentoRequest.duracaoEmMinutos() : agendamentoExistente.getDuracaoEmMinutos();
-            UUID idProfissional = mudouProfissional ? usuarioIdDestino : agendamentoExistente.getUsuario().getId();
 
-            validaDisponibilidadeDeHorario(idProfissional, novoInicio, novaDuracao, agendamentoId);
+            validaDisponibilidadeDeHorario(agendamentoRequest.usuarioId(), novoInicio, novaDuracao, agendamentoId);
         }
 
         if (mudouHorario) agendamentoExistente.setDataHoraInicio(agendamentoRequest.dataHoraInicio());
         if (mudouDuracao) agendamentoExistente.setDuracaoEmMinutos(agendamentoRequest.duracaoEmMinutos());
-        if (mudouProfissional) {
-            Usuario usuario = usuarioRepository.findById(usuarioIdDestino)
-                    .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
-            agendamentoExistente.setUsuario(usuario);
-            if (!mudouTipoAgendamento) {
-                validarTipoAtendimentoDoProfissional(agendamentoExistente.getTipoAtendimento(), usuarioIdDestino);
-            }
-        }
-        if (mudouTipoAgendamento) {
-            UUID usuarioIdTipoAtendimento = mudouProfissional
-                    ? usuarioIdDestino
-                    : agendamentoExistente.getUsuario().getId();
 
+        if (mudouTipoAgendamento) {
             TipoAtendimento tipoAtendimento = findTipoAtendimentoByScope(agendamentoRequest.tipoAtendimentoId())
                     .orElseThrow(() -> new EntityNotFoundException("Tipo de atendimento não encontrado"));
-            validarTipoAtendimentoDoProfissional(tipoAtendimento, usuarioIdTipoAtendimento);
+            validarTipoAtendimentoDoProfissional(tipoAtendimento, agendamentoRequest.usuarioId());
             agendamentoExistente.setTipoAtendimento(tipoAtendimento);
             agendamentoExistente.setValorAtendimento(tipoAtendimento.getValorPadraoTipoAtendimento());
         }
